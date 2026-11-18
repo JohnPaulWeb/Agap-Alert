@@ -1,0 +1,1 @@
+PHPMailer v6.9.3 (LGPL-2.1) — https://github.com/PHPMailer/PHPMailer
