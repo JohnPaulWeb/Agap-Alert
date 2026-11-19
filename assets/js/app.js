@@ -915,7 +915,7 @@
               + '</a>'
             : '')
         + '<div class="map-popup-actions">'
-            + '<button class="map-popup-btn" onclick="document.querySelector(\'[data-a=route][data-v=\\\'' + i + '\\\']\') && document.querySelector(\'[data-a=route][data-v=\\\'' + i + '\\\']\').click()">'
+            + '<button class="map-popup-btn" data-a="route" data-v="' + i + '">'
                 + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg>'
                 + T('route')
             + '</button>'
@@ -2997,9 +2997,15 @@
 
     list.innerHTML = '<div style="padding:1.5rem;color:var(--mute);font-size:13px">' + T('loading') + '</div>';
 
-    var url = _isAdmin
-      ? 'api/admin/activity-log.php?page=' + _ldPage
-      : 'api/admin/activity-log-official.php?page=' + _ldPage;
+    var dateFrom = (document.getElementById('ld-date-from') || {}).value || '';
+    var dateTo   = (document.getElementById('ld-date-to')   || {}).value || '';
+
+    var url = (_isAdmin
+      ? 'api/admin/activity-log.php'
+      : 'api/admin/activity-log-official.php')
+      + '?page=' + _ldPage
+      + (dateFrom ? '&from=' + encodeURIComponent(dateFrom) : '')
+      + (dateTo   ? '&to='   + encodeURIComponent(dateTo)   : '');
 
     fetch(url, { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
@@ -3062,16 +3068,30 @@
     nav();
   }
 
-  // Wire close button and overlay
   (function () {
     var closeBtn = document.getElementById('log-drawer-close');
     var overlay  = document.getElementById('log-drawer-overlay');
     var prevBtn  = document.getElementById('ld-prev');
     var nextBtn  = document.getElementById('ld-next');
+    var dateFrom = document.getElementById('ld-date-from');
+    var dateTo   = document.getElementById('ld-date-to');
+    var clearBtn = document.getElementById('ld-filter-clear');
+
     if (closeBtn) closeBtn.addEventListener('click', _ldCloseDrawer);
     if (overlay)  overlay.addEventListener('click', _ldCloseDrawer);
     if (prevBtn)  prevBtn.addEventListener('click', function () { if (_ldPage > 1) _ldLoad(_ldPage - 1); });
     if (nextBtn)  nextBtn.addEventListener('click', function () { _ldLoad(_ldPage + 1); });
+
+    // Re-fetch when either date changes
+    if (dateFrom) dateFrom.addEventListener('change', function () { _ldLoad(1); });
+    if (dateTo)   dateTo.addEventListener('change',   function () { _ldLoad(1); });
+
+    // Clear both dates
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      if (dateFrom) dateFrom.value = '';
+      if (dateTo)   dateTo.value   = '';
+      _ldLoad(1);
+    });
   }());
 
   var A = {
