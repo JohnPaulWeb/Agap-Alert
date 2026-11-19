@@ -1,2 +1,3 @@
 config/mail.php
 config/google.php
+config/openweather.php

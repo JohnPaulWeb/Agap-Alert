@@ -843,7 +843,7 @@
   function _updateFloodLayer() {
     if (!_map || !_map.loaded()) return;
     _removeLayer('flood-zone');
-    if (!S.fl || S.lv === 0) return;
+    if (!S.fl) return;   // only skip when toggle is off — show at ALL levels including Normal
     var color = floodColor();
     _map.addSource('flood-zone', {
       type: 'geojson',
@@ -855,7 +855,7 @@
     _map.addLayer({
       id: 'flood-zone', type: 'fill',
       source: 'flood-zone',
-      paint: { 'fill-color': color, 'fill-opacity': 0.25 }
+      paint: { 'fill-color': color, 'fill-opacity': S.lv > 0 ? 0.30 : 0.12 }
     });
     _map.addLayer({
       id: 'flood-zone-out', type: 'line',
@@ -993,16 +993,6 @@
               : '')
       + '</div>'
 
-      /* ── Top-right: fullscreen ── */
-      + '<div class="map-top-right">'
-          + '<button class="map-ctrl-btn" id="map-fullscreen-btn" aria-label="Toggle fullscreen">'
-              + '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-              + '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>'
-              + '<line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>'
-              + '</svg>'
-          + '</button>'
-      + '</div>'
-
       /* ── Zoom + locate controls (bottom-right, separate circles) ── */
       + '<div class="zm">'
           + '<button data-a="zin"  aria-label="Zoom in">'  + ic('plus')  + '</button>'
@@ -1064,8 +1054,91 @@
         _routeLayerId    = null;
       }
       initMap();
-      _bindMapFullscreen();
       if (_userLat !== null) _updateUserMarker();
+
+      // ── Live map address search (Nominatim) ────────────────────────────────
+      var _searchTimer = null;
+      var _searchResults = [];
+
+      function _doMapSearch(query) {
+        var input   = document.getElementById('map-search-input');
+        var results = document.getElementById('map-search-results');
+        if (!query) { if (results) results.style.display = 'none'; return; }
+
+        var url = 'https://nominatim.openstreetmap.org/search'
+          + '?q=' + encodeURIComponent(query)
+          + '&format=json&limit=5&countrycodes=ph';
+
+        fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'AgapAlert/1.0' } })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            _searchResults = data || [];
+            if (!results) return;
+            if (!_searchResults.length) {
+              results.innerHTML = '<div class="map-search-no-result">No results found</div>';
+              results.style.display = '';
+              return;
+            }
+            results.innerHTML = _searchResults.map(function (r, i) {
+              var parts = r.display_name.split(',');
+              var main  = parts[0].trim();
+              var sub   = parts.slice(1, 3).join(',').trim();
+              return '<button class="map-search-item" data-idx="' + i + '">'
+                + '<span class="map-search-main">' + main + '</span>'
+                + '<span class="map-search-sub">' + sub + '</span>'
+              + '</button>';
+            }).join('');
+            results.style.display = '';
+
+            results.querySelectorAll('.map-search-item').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var r   = _searchResults[parseInt(btn.dataset.idx)];
+                var lat = parseFloat(r.lat);
+                var lon = parseFloat(r.lon);
+                if (_map) _map.flyTo({ center: [lon, lat], zoom: 15 });
+                if (input) input.value = r.display_name.split(',')[0].trim();
+                results.style.display = 'none';
+              });
+            });
+          })
+          .catch(function () {
+            if (results) results.style.display = 'none';
+          });
+      }
+
+      var searchInput = document.getElementById('map-search-input');
+      if (searchInput) {
+        // Create dropdown results container
+        var resultsEl = document.createElement('div');
+        resultsEl.id = 'map-search-results';
+        resultsEl.className = 'map-search-results';
+        resultsEl.style.display = 'none';
+        searchInput.parentNode.appendChild(resultsEl);
+
+        searchInput.addEventListener('input', function () {
+          clearTimeout(_searchTimer);
+          var v = searchInput.value.trim();
+          if (!v) { resultsEl.style.display = 'none'; return; }
+          _searchTimer = setTimeout(function () { _doMapSearch(v); }, 400);
+        });
+
+        searchInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            clearTimeout(_searchTimer);
+            _doMapSearch(searchInput.value.trim());
+          }
+          if (e.key === 'Escape') {
+            resultsEl.style.display = 'none';
+          }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+          if (!searchInput.contains(e.target) && !resultsEl.contains(e.target)) {
+            resultsEl.style.display = 'none';
+          }
+        }, { once: false });
+      }
     }, 100);
   }
 
@@ -1143,6 +1216,8 @@
         + '<div id="refresh-bar" style="font-size:12px;color:var(--dim);text-align:right;padding:2px 0 6px">'
             + T('lastRefresh') + ': <span id="last-refresh">' + T('now') + '</span>'
         + '</div>'
+        + '<div id="forecast-strip" class="forecast-strip"></div>'
+        + '<div id="river-strip" class="river-strip"></div>'
       + '</div>'
       + '<div class="cols"><div>' + map() + '</div><aside>'
           + '<div class="sec">'
@@ -1525,7 +1600,12 @@
               + '</div>'
               // Map picker
               + '<div style="margin-bottom:0.75rem">'
-                  + '<label class="gen-label">Pin Location <span style="text-transform:none;font-weight:400;font-size:11.5px;color:var(--dim)">(click the map to place the shelter pin)</span></label>'
+                  + '<label class="gen-label">Pin Location <span style="text-transform:none;font-weight:400;font-size:11.5px;color:var(--dim)">(search an address or click the map)</span></label>'
+                  + '<div style="display:flex;gap:0.5rem;margin-bottom:0.5rem">'
+                      + '<input class="gen-input" id="sh-addr-search" type="text" placeholder="e.g. Dalongue, Santa Barbara, Pangasinan" style="flex:1">'
+                      + '<button class="gen-btn" id="sh-addr-btn" type="button">Find</button>'
+                  + '</div>'
+                  + '<div id="sh-addr-err" style="font-size:12px;color:var(--rose);margin-bottom:0.4rem;display:none"></div>'
                   + '<div id="sh-map-picker" style="height:220px;border-radius:var(--r-s);overflow:hidden;border:1px solid var(--line2);position:relative">'
                       + '<div id="sh-map" style="width:100%;height:100%"></div>'
                       + '<div id="sh-map-hint" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px;pointer-events:none;white-space:nowrap">Click to place pin</div>'
@@ -1892,6 +1972,62 @@
         }
       });
     }
+
+    // ── Nominatim address → coordinates ──────────────────────────────────────
+    function _geocodeAddress() {
+      var addrEl  = document.getElementById('sh-addr-search');
+      var errEl   = document.getElementById('sh-addr-err');
+      var addrBtn = document.getElementById('sh-addr-btn');
+      if (!addrEl) return;
+      var query = addrEl.value.trim();
+      if (!query) return;
+
+      if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+      if (addrBtn) { addrBtn.disabled = true; addrBtn.textContent = '…'; }
+
+      var url = 'https://nominatim.openstreetmap.org/search'
+        + '?q=' + encodeURIComponent(query)
+        + '&format=json&limit=1&countrycodes=ph';
+
+      fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'AgapAlert/1.0' } })
+        .then(function (r) { return r.json(); })
+        .then(function (results) {
+          if (addrBtn) { addrBtn.disabled = false; addrBtn.textContent = 'Find'; }
+          if (!results || !results.length) {
+            if (errEl) { errEl.textContent = 'Address not found. Try a more specific location.'; errEl.style.display = ''; }
+            return;
+          }
+          var lat = parseFloat(results[0].lat);
+          var lon = parseFloat(results[0].lon);
+          // Fill the coordinate fields
+          document.getElementById('sh-lat').value = lat.toFixed(6);
+          document.getElementById('sh-lon').value = lon.toFixed(6);
+          // Update the map
+          if (_pickerMap) {
+            var lngLat = { lng: lon, lat: lat };
+            _pickerMap.flyTo({ center: [lon, lat], zoom: 16 });
+            _placePickerMarker(lngLat);
+            var hint = document.getElementById('sh-map-hint');
+            if (hint) hint.textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
+          }
+          // Auto-fill landmark if it's empty
+          var landmarkEl = document.getElementById('sh-landmark');
+          if (landmarkEl && !landmarkEl.value.trim()) {
+            landmarkEl.value = results[0].display_name.split(',').slice(0, 3).join(',').trim();
+          }
+        })
+        .catch(function () {
+          if (addrBtn) { addrBtn.disabled = false; addrBtn.textContent = 'Find'; }
+          if (errEl) { errEl.textContent = 'Could not reach geocoding service. Check your connection.'; errEl.style.display = ''; }
+        });
+    }
+
+    var addrBtn    = document.getElementById('sh-addr-btn');
+    var addrSearch = document.getElementById('sh-addr-search');
+    if (addrBtn)    addrBtn.addEventListener('click', _geocodeAddress);
+    if (addrSearch) addrSearch.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); _geocodeAddress(); }
+    });
 
     if (shelterCancelBtn) {
       shelterCancelBtn.addEventListener('click', function () {
@@ -2571,7 +2707,7 @@
     band();
     netbar();
     nav();
-    if (S.tab === 'radar') { initMapAfterRender(); updateWeatherUI(); }
+    if (S.tab === 'radar') { initMapAfterRender(); updateWeatherUI(); renderForecastStrip(); renderRiverStrip(); }
     if (S.tab === 'reports') {
       var led = document.getElementById('reports-led');
       if (led) { _renderReportRows(led); _renderLoadMore(); }
@@ -3035,10 +3171,8 @@
     },
     lfl:   function ()      {
       S.fl = !S.fl;
-      if (_map && _map.loaded()) {
-        _removeLayer('flood-zone'); _floodLayerId = null;
-        if (S.fl) _updateFloodLayer();
-      }
+      _removeLayer('flood-zone'); _floodLayerId = null;
+      if (_map && _map.loaded() && S.fl) _updateFloodLayer();
       var b = document.querySelector('[data-a="lfl"]');
       if (b) b.setAttribute('aria-pressed', String(S.fl));
     },
@@ -3392,6 +3526,7 @@
 
   // Live weather data from API (null until loaded)
   var W = null;
+  var FORECAST = null;
 
   function fetchWeather() {
     var url = 'api/weather.php?lat=' + WEATHER_LAT
@@ -3408,6 +3543,87 @@
       .catch(function () { /* offline — keep showing static values */ });
   }
 
+  function fetchForecast() {
+    fetch('api/forecast.php', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok || !data.forecast) return;
+        FORECAST = data.forecast;
+        renderForecastStrip();
+      })
+      .catch(function () {});
+  }
+
+  function renderForecastStrip() {
+    var el = document.getElementById('forecast-strip');
+    if (!el || !FORECAST || !FORECAST.length) return;
+
+    // Rain intensity color
+    function rainColor(mm) {
+      if (mm >= 30) return 'var(--rose)';
+      if (mm >= 15) return '#f97316';
+      if (mm >= 5)  return '#f59e0b';
+      return 'var(--ac)';
+    }
+
+    el.innerHTML = FORECAST.map(function (d) {
+      var col = rainColor(d.rain_mm);
+      return '<div class="fc-day">'
+        + '<span class="fc-label">' + d.label + '</span>'
+        + '<span class="fc-rain" style="color:' + col + '">' + d.rain_mm.toFixed(1) + ' mm</span>'
+        + '<span class="fc-cond">' + d.condition + '</span>'
+        + '<span class="fc-temp">' + Math.round(d.temp_max) + '° / ' + Math.round(d.temp_min) + '°</span>'
+      + '</div>';
+    }).join('');
+  }
+
+  /* ── River discharge forecast ────────────────────────────────────────────── */
+  var RIVER = null;
+
+  function fetchRiver() {
+    fetch('api/river.php', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok || !data.river) return;
+        RIVER = data.river;
+        renderRiverStrip();
+      })
+      .catch(function () {});
+  }
+
+  var RIVER_LEVEL_COLORS = ['var(--ok)', '#f59e0b', '#f97316', 'var(--rose)'];
+  var RIVER_LEVEL_LABELS = ['Normal', 'Watch', 'Warning', 'Critical'];
+
+  function renderRiverStrip() {
+    var el = document.getElementById('river-strip');
+    if (!el || !RIVER) return;
+
+    var peak   = RIVER.peak;
+    var today  = RIVER.today;
+    var fc     = RIVER.forecast;
+
+    // Peak warning badge if river is forecast to rise
+    var peakBadge = '';
+    if (peak && peak.level > 0 && peak.date !== today.date) {
+      peakBadge = '<div class="river-peak-warn" style="color:' + RIVER_LEVEL_COLORS[peak.level] + '">'
+        + '⚠ Peak ' + peak.discharge + ' m³/s on ' + peak.label
+        + ' — ' + RIVER_LEVEL_LABELS[peak.level]
+      + '</div>';
+    }
+
+    var strip = fc.map(function (d) {
+      var col = RIVER_LEVEL_COLORS[d.level];
+      return '<div class="fc-day">'
+        + '<span class="fc-label">' + d.label + '</span>'
+        + '<span class="fc-rain" style="color:' + col + '">' + d.discharge + '</span>'
+        + '<span class="fc-cond">m³/s</span>'
+        + '<span class="fc-cond" style="color:' + col + '">' + RIVER_LEVEL_LABELS[d.level] + '</span>'
+      + '</div>';
+    }).join('');
+
+    el.innerHTML = peakBadge + '<div class="forecast-strip">' + strip + '</div>';
+  }
+
   function updateWeatherUI() {
     if (!W) return;
     var factsEls = document.querySelectorAll('.facts > div');
@@ -3421,6 +3637,7 @@
       var condFil = wxLabel(W.weather_condition);
       factsEls[3].innerHTML = T('weather') + '<b>' + condFil + ' · ' + W.temperature.toFixed(1) + '°C</b>';
     }
+    renderForecastStrip();
   }
 
   function compassDir(deg) {
@@ -3714,7 +3931,11 @@
 
   // Fetch live weather on load, then refresh every 10 minutes
   fetchWeather();
+  fetchForecast();
+  fetchRiver();
   setInterval(fetchWeather, 10 * 60 * 1000);
+  setInterval(fetchForecast, 60 * 60 * 1000);
+  setInterval(fetchRiver,    60 * 60 * 1000);
 
   // Show flash message left by login / register
   var _flashRaw = localStorage.getItem('agapalert_flash');

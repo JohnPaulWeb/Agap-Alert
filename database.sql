@@ -14,24 +14,23 @@ USE agapalert;
 -- Stores all accounts: residents, barangay officials, and admins.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS users (
-    id                  INT UNSIGNED    AUTO_INCREMENT PRIMARY KEY,
-    fname               VARCHAR(50)     NOT NULL,
-    mname               VARCHAR(50)     NULL,
-    lname               VARCHAR(50)     NOT NULL,
-    email               VARCHAR(100)    NULL UNIQUE,
-    google_id           VARCHAR(255)    NULL UNIQUE  COMMENT 'Google OAuth ID — set when user signs in with Google',
-    google_avatar_url   VARCHAR(500)    NULL         COMMENT 'Profile picture URL from Google',
-    phone_number        VARCHAR(15)     NULL,
-    phone_norm          CHAR(12)        NULL UNIQUE  COMMENT 'Normalized format: 639XXXXXXXXX',
-    password_hash       VARCHAR(255)    NULL         COMMENT 'NULL for Google-only accounts',
-    role                ENUM('resident','official','admin') NOT NULL DEFAULT 'resident',
-    status              ENUM('active','pending','rejected') NOT NULL DEFAULT 'active',
-    avatar_path         VARCHAR(255)    NULL,
-    invite_code         VARCHAR(20)     NULL,
-    must_change_password TINYINT(1)     NOT NULL DEFAULT 0  COMMENT '1 = admin issued a temporary password',
-    privacy_accepted_at TIMESTAMP       NULL         COMMENT 'When the user agreed to the Data Privacy Notice',
-    created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
-    -- Note: FK from invite_code → invite_codes.code is added after invite_codes is created
+    id                   INT UNSIGNED    AUTO_INCREMENT PRIMARY KEY,
+    fname                VARCHAR(50)     NOT NULL,
+    mname                VARCHAR(50)     NULL,
+    lname                VARCHAR(50)     NOT NULL,
+    email                VARCHAR(100)    NULL UNIQUE,
+    google_id            VARCHAR(255)    NULL UNIQUE  COMMENT 'Google OAuth ID',
+    google_avatar_url    VARCHAR(500)    NULL         COMMENT 'Profile picture URL from Google',
+    phone_number         VARCHAR(15)     NULL,
+    phone_norm           CHAR(12)        NULL UNIQUE  COMMENT 'Normalized: 639XXXXXXXXX',
+    password_hash        VARCHAR(255)    NULL         COMMENT 'NULL for Google-only accounts',
+    role                 ENUM('resident','official','admin') NOT NULL DEFAULT 'resident',
+    status               ENUM('active','pending','rejected')  NOT NULL DEFAULT 'active',
+    avatar_path          VARCHAR(255)    NULL,
+    invite_code          VARCHAR(20)     NULL,
+    must_change_password TINYINT(1)      NOT NULL DEFAULT 0,
+    privacy_accepted_at  TIMESTAMP       NULL,
+    created_at           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================================================
@@ -51,6 +50,11 @@ CREATE TABLE IF NOT EXISTS invite_codes (
     FOREIGN KEY (used_by)    REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- Link users.invite_code back to invite_codes.code
+ALTER TABLE users
+    ADD CONSTRAINT IF NOT EXISTS fk_user_invite_code
+    FOREIGN KEY (invite_code) REFERENCES invite_codes(code);
+
 -- =============================================================================
 -- SHELTERS
 -- Evacuation centers with capacity and location info.
@@ -67,6 +71,23 @@ CREATE TABLE IF NOT EXISTS shelters (
     latitude   DECIMAL(9,6)  NULL,
     longitude  DECIMAL(9,6)  NULL,
     updated_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- =============================================================================
+-- SHELTER CHECK-INS
+-- Logs when a resident checks in to an evacuation shelter via QR code.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS shelter_checkins (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    shelter_id  INT UNSIGNED NOT NULL,
+    user_id     INT UNSIGNED NULL        COMMENT 'NULL = anonymous check-in',
+    checked_in  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    checked_out TIMESTAMP    NULL,
+    note        VARCHAR(255) NULL,
+
+    FOREIGN KEY (shelter_id) REFERENCES shelters(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL,
+    INDEX idx_shelter_time (shelter_id, checked_in)
 );
 
 -- =============================================================================
@@ -163,13 +184,13 @@ CREATE TABLE IF NOT EXISTS reset_requests (
 
 -- =============================================================================
 -- ACTIVITY LOG
--- Records admin actions like approvals, password resets, flood-level changes.
+-- Records admin and official actions like approvals, flood-level changes.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS activity_log (
     id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    actor_id   INT UNSIGNED NOT NULL   COMMENT 'The admin or official who did the action',
+    actor_id   INT UNSIGNED NOT NULL   COMMENT 'Admin or official who performed the action',
     action     VARCHAR(60)  NOT NULL   COMMENT 'e.g. approve_official, reset_password',
-    target_id  INT UNSIGNED NULL       COMMENT 'The user or resource that was affected',
+    target_id  INT UNSIGNED NULL       COMMENT 'The user or resource affected',
     details    VARCHAR(255) NULL       COMMENT 'Plain-English summary of what changed',
     created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -195,12 +216,10 @@ CREATE PROCEDURE RecordWeather(
     IN p_wind_direction_deg SMALLINT UNSIGNED
 )
 BEGIN
-    -- Delete readings older than 30 minutes for this zone
     DELETE FROM weather_readings
     WHERE zone = p_zone
       AND recorded_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE);
 
-    -- Save the new reading
     INSERT INTO weather_readings (
         zone, latitude, longitude, weather_condition,
         temperature, rain_mm, wind_speed_kmh,
