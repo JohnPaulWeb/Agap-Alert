@@ -21,6 +21,21 @@
       }
       // Keep localStorage in sync with DB (role/status may have changed)
       localStorage.setItem('agapalert_user', JSON.stringify(data.user));
+      // Update the in-memory user so avatar/name reflect latest data
+      _user = data.user;
+      // Defer so _updateSidebarUserChip is defined before we call it
+      setTimeout(function () {
+        if (typeof _updateSidebarUserChip === 'function') _updateSidebarUserChip();
+        var hdAvatar = document.getElementById('hd-user-avatar');
+        if (hdAvatar) {
+          var src = _user.avatar_path || _user.google_avatar_url || null;
+          hdAvatar.innerHTML = src
+            ? '<img src="' + src + '" alt="" style="width:30px;height:30px;border-radius:50%;object-fit:cover;display:block">'
+            : '<span style="width:30px;height:30px;border-radius:50%;background:var(--ac);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--acon)">'
+                + (_user.full_name ? _user.full_name.charAt(0).toUpperCase() : '?')
+              + '</span>';
+        }
+      }, 0);
 
       // If admin reset the password while the user was already logged in,
       // enforce the change now even without going through login.js again.
@@ -1421,7 +1436,7 @@
 
   /* ── Header user menu ────────────────────────────────────────────────────── */
   (function _initHeaderUserMenu() {
-    var avatarSrc = _user.avatar_path ? _user.avatar_path : (_user.avatar || null);
+    var avatarSrc = _user.avatar_path || _user.google_avatar_url || (_user.avatar || null);
     var roleLabel = _isAdmin ? 'Administrator'
       : _isOfficial ? (_isPending ? 'Official (pending)' : 'Barangay official')
       : 'Resident';
@@ -1492,7 +1507,7 @@
   function _updateSidebarUserChip() {
     var el = document.getElementById('user-chip-side');
     if (!el) return;
-    var avatarSrc = _user.avatar_path ? _user.avatar_path : (_user.avatar || null);
+    var avatarSrc = _user.avatar_path || _user.google_avatar_url || (_user.avatar || null);
     var roleLabel = _isAdmin ? 'Administrator'
       : _isOfficial ? (_isPending ? 'Official (pending)' : 'Barangay official')
       : 'Resident';

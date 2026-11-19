@@ -68,7 +68,8 @@ function fetchUser(PDO $db, int $id): array|false {
     $stmt = $db->prepare(
         'SELECT id, fname, mname, lname,
                 CONCAT(fname, IF(mname IS NOT NULL AND mname != "", CONCAT(" ", mname, " "), " "), lname) AS full_name,
-                email, phone_number, role, status, avatar_path, google_avatar_url,
+                email, phone_number, role, status, avatar_path, google_avatar_url, google_id,
+                (password_hash IS NOT NULL) AS has_password,
                 invite_code, must_change_password, created_at
          FROM users WHERE id = ? LIMIT 1'
     );
