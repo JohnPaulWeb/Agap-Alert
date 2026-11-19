@@ -48,8 +48,15 @@ $temp      = (float) $current['temperature_2m'];
 $condition = getSkyCondition((int) $current['weather_code']);
 
 // ── Store in DB ───────────────────────────────────────────────────────────────
-$db->prepare('CALL RecordWeather(?, ?, ?, ?, ?, ?, ?, ?)')
-->execute([
+// Delete old readings for this zone, then insert the new one
+$db->prepare(
+    'DELETE FROM weather_readings WHERE zone = ? AND recorded_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)'
+)->execute([$zone]);
+
+$db->prepare(
+    'INSERT INTO weather_readings (zone, latitude, longitude, weather_condition, temperature, rain_mm, wind_speed_kmh, wind_direction_deg, recorded_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+)->execute([
     $zone, $lat, $lon, $condition,
     $temp,
     (float) $current['rain'],
