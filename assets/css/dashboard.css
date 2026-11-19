@@ -2430,3 +2430,341 @@ body.sb-collapsed .page-body {
 @media (hover: hover) {
   .map-pin:hover { z-index: 10; }
 }
+
+/* ── Activity Log Drawer ─────────────────────────────────────────────────── */
+.log-drawer {
+  position: fixed;
+  right: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 62px);
+  bottom: 0;
+  width: 400px;
+  max-width: 100vw;
+  background: var(--s1);
+  border-left: 1px solid var(--line2);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  transform: translateX(100%);
+  transition: transform var(--sb-trans);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.22);
+}
+
+.log-drawer.open {
+  transform: translateX(0);
+}
+
+/* Push main content left when drawer is open on wide screens */
+@media (min-width: 900px) {
+  body.log-drawer-open .page-body {
+    margin-right: 400px;
+    transition: margin-right var(--sb-trans);
+  }
+}
+
+.log-drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,5,15,0.5);
+  z-index: 19;
+  backdrop-filter: blur(2px);
+}
+
+.log-drawer-overlay.on { display: block; }
+
+@media (min-width: 900px) {
+  .log-drawer-overlay { display: none !important; }
+}
+
+/* Drawer header */
+.log-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.85rem;
+  border-bottom: 1px solid var(--line2);
+  flex-shrink: 0;
+  gap: 0.75rem;
+}
+
+.log-drawer-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 2px;
+  letter-spacing: -0.01em;
+}
+
+.log-drawer-count {
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.log-drawer-close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--line2);
+  background: none;
+  color: var(--mute);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.log-drawer-close:hover {
+  color: var(--ink);
+  border-color: var(--mute);
+  background: var(--s2);
+}
+
+/* Drawer body */
+.log-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+
+/* Individual log entry */
+.log-entry {
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--line2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: background 0.12s;
+}
+
+.log-entry:last-child { border-bottom: none; }
+
+.log-entry:hover { background: var(--s2); }
+
+.log-entry-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.log-entry-time {
+  font-size: 11.5px;
+  color: var(--dim);
+  flex-shrink: 0;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.log-entry-actor {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.log-entry-details {
+  font-size: 12.5px;
+  color: var(--mute);
+  line-height: 1.45;
+}
+
+.log-entry-target {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+/* Pager */
+.log-drawer-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem 0.5rem;
+  flex-wrap: wrap;
+}
+
+.log-drawer-empty {
+  padding: 2rem 1.25rem;
+  color: var(--mute);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+/* ── Users Drawer sections ───────────────────────────────────────────────── */
+.ud-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.ud-section-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--mute);
+}
+
+.ud-divider {
+  height: 1px;
+  background: var(--line2);
+  margin: 0.5rem 0 0;
+  border: none;
+}
+
+/* User row inside the drawer */
+.ud-user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--line2);
+  transition: background 0.12s;
+}
+.ud-user-row:last-child { border-bottom: none; }
+.ud-user-row:hover { background: var(--s2); }
+
+.ud-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,212,255,0.14);
+  border: 1px solid var(--line2);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ac);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ud-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.ud-info {
+  flex: 1;
+  overflow: hidden;
+}
+.ud-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ud-sub {
+  font-size: 11.5px;
+  color: var(--mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sidebar nav category labels */
+.sb-category {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  padding: 0.65rem 12px 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity var(--sb-trans);
+}
+.sidebar.collapsed .sb-category {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  padding: 0;
+}
+
+/* ── Users Drawer tabs ───────────────────────────────────────────────────── */
+.ud-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line2);
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+  gap: 0.25rem;
+}
+
+.ud-tab {
+  flex: 1;
+  padding: 0.65rem 0.75rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mute);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.ud-tab:hover { color: var(--ink); }
+
+.ud-tab.active {
+  color: var(--ac);
+  border-bottom-color: var(--ac);
+}
+
+.ud-tab-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--s2);
+  color: var(--mute);
+  border-radius: 10px;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 16px;
+}
+
+.ud-tab.active .ud-tab-badge {
+  background: rgba(0,212,255,0.15);
+  color: var(--ac);
+}
+
+/* Each pane fills remaining height and scrolls independently */
+.ud-pane {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+  min-height: 0;
+}
+
+.ud-search-wrap {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--line2);
+  flex-shrink: 0;
+}
+
+.ud-search-wrap .gen-input {
+  width: 100%;
+}
+
+.ud-list { flex: 1; }
+
+.ud-more-wrap {
+  text-align: center;
+  padding: 0.75rem 0;
+  flex-shrink: 0;
+}
+
+/* Make the drawer itself a flex column so panes scroll properly */
+#users-drawer {
+  /* inherits display:flex; flex-direction:column from .log-drawer */
+}

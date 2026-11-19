@@ -11,7 +11,7 @@ if (!$rawUser)
 $stmt = db()->prepare(
     'SELECT id, fname, mname, lname,
             CONCAT(fname, IF(mname IS NOT NULL AND mname != "", CONCAT(" ", mname, " "), " "), lname) AS full_name,
-            email, phone_number, role, status, avatar_path, invite_code,
+            email, phone_number, role, status, avatar_path, google_avatar_url, invite_code,
             must_change_password, created_at
      FROM   users
      WHERE  id = ?'

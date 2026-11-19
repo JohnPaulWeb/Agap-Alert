@@ -488,6 +488,14 @@ select.gen-input {
   gap: 2rem;
 }
 
+/* Users view — fill the full content area, no max-width constraint */
+.pg .admin-main.admin-main--wide {
+  max-width: none;
+  margin: 0;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
 /* ── New features: residents, history, activity log, privacy notice ──────────── */
 
 /* Admin tabs — allow horizontal scroll when there are many tabs */

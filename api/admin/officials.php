@@ -35,7 +35,7 @@ if ($method === 'POST') {
         json_response(['ok' => false, 'error' => 'Invalid user_id.'], 400);
 
     // Fetch the target's name for the log
-    $targetRow = $db->prepare("SELECT fname, lname FROM users WHERE id = ? LIMIT 1");
+    $targetRow = $db->prepare("SELECT fname, lname, email FROM users WHERE id = ? LIMIT 1");
     $targetRow->execute([$userId]);
     $targetUser = $targetRow->fetch();
     $targetName = $targetUser ? $targetUser['fname'] . ' ' . $targetUser['lname'] : "user #$userId";
@@ -46,6 +46,20 @@ if ($method === 'POST') {
     )->execute([$userId]);
 
     agap_log($db, $admin['id'], 'revoke_official', $userId, "Revoked official access from $targetName");
+
+    // Notify the user by email
+    if (!empty($targetUser['email'])) {
+        require_once __DIR__ . '/../../config/mail_helper.php';
+        agap_send_mail(
+            $targetUser['email'],
+            'Your AgapAlert official access has been removed',
+            "Hi {$targetUser['fname']},\n\n"
+            . "This is to inform you that your official access to AgapAlert has been removed "
+            . "by an administrator. Your account remains active as a resident.\n\n"
+            . "If you believe this was done in error, please contact your barangay administrator.\n\n"
+            . "— AgapAlert, Barangay Dalongue DRRMC"
+        );
+    }
 
     json_response(['ok' => true, 'message' => 'Official access revoked.']);
 }

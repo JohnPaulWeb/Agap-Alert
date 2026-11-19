@@ -335,7 +335,19 @@
         update_shelter:       'Updated shelter',
         generate_invite_code: 'Generated invite code',
         revoke_invite_code:   'Revoked invite code',
-      }
+      },
+      // Official panel
+      offPanelTitle: 'Official Panel',
+      offPanelSub: 'Manage shelters, reports and view your activity log.',
+      offTabShelters: 'Shelters',
+      offTabLog: 'My Activity Log',
+      offLogTitle: 'My Activity Log',
+      offLogSub: 'All actions you have performed in this system.',
+      offLogEmpty: 'No activity recorded yet.',
+      offLogLoad: 'Could not load the activity log.',
+      offLogThTime: 'Time', offLogThAction: 'Action',
+      offLogThTarget: 'Affected', offLogThDetails: 'Details',
+      offLogPrev: 'Previous', offLogNext: 'Next', offLogPage: 'Page',
     },
 
     fil: {
@@ -625,7 +637,19 @@
         update_shelter:       'In-update ang likasan',
         generate_invite_code: 'Ginawang invite code',
         revoke_invite_code:   'Binawing invite code',
-      }
+      },
+      // Official panel
+      offPanelTitle: 'Panel ng Opisyal',
+      offPanelSub: 'Pamahalaan ang mga likasan, ulat at tingnan ang iyong log ng aktibidad.',
+      offTabShelters: 'Mga Likasan',
+      offTabLog: 'Aking Log ng Aktibidad',
+      offLogTitle: 'Aking Log ng Aktibidad',
+      offLogSub: 'Lahat ng mga aksyon na iyong ginawa sa sistemang ito.',
+      offLogEmpty: 'Wala pang naitarang aktibidad.',
+      offLogLoad: 'Hindi ma-load ang log ng aktibidad.',
+      offLogThTime: 'Oras', offLogThAction: 'Aksyon',
+      offLogThTarget: 'Naapektuhan', offLogThDetails: 'Detalye',
+      offLogPrev: 'Nakaraan', offLogNext: 'Susunod', offLogPage: 'Pahina',
     }
   };
 
@@ -680,7 +704,7 @@
     role:  _isOfficial ? 'off' : 'res',
     tab:   'radar',
     net:   1,
-    lang:  'fil',
+    lang:  'en',
     open:  null,
     more:  false,
     fl:    1,
@@ -1232,7 +1256,9 @@
     home:   '<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
     list:   '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
     phone:  '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
-    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>'
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    clock:  '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    users:  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
   };
 
   function sbIcon(name) {
@@ -1241,41 +1267,71 @@
   }
 
   function nav() {
-    var T2 = [
-      ['radar',    'map',   T('map')],
-      ['centers',  'home',  T('sh')],
-      ['reports',  'list',  off() ? T('inc') : T('rp')],
-      ['hotlines', 'phone', T('hot')],
-      _isAdmin ? ['admin', 'shield', 'Admin panel'] : null
-    ];
     var n = S.reps.filter(function (r) { return r.st === 0; }).length;
+
+    // Groups: [ label, entries[] ] where entry = [id, icon, label, action?]
+    var groups = [
+      {
+        label: 'General',
+        items: [
+          ['radar',    'map',   T('map')],
+          ['centers',  'home',  T('sh')],
+          ['reports',  'list',  off() ? T('inc') : T('rp')],
+          ['hotlines', 'phone', T('hot')],
+        ]
+      }
+    ];
+
+    if (_isAdmin) {
+      groups.push({
+        label: 'Administration',
+        items: [
+          ['admin',  'shield', 'Admin panel', 'tab'],
+          ['users',  'users',  'Users',       'tab'],
+          ['actlog', 'clock',  'Activity Log','actlog'],
+        ]
+      });
+    } else if (_isOfficial && !_isPending) {
+      groups.push({
+        label: 'Officials',
+        items: [
+          ['official', 'shield', 'Official panel', 'tab'],
+          ['actlog',   'clock',  'Activity Log',   'actlog'],
+        ]
+      });
+    }
 
     /* Sidebar nav */
     var tabsEl = document.getElementById('tabs');
     if (tabsEl) {
-      tabsEl.innerHTML = T2.filter(Boolean).map(function (t) {
-        var badge = (t[0] === 'reports' && off() && n)
-          ? '<span class="n">' + n + '</span>' : '';
-        return '<button data-a="tab" data-v="' + t[0] + '"'
-          + (S.tab === t[0] ? ' aria-current="page"' : '')
-          + ' data-tooltip="' + t[2] + '">'
-          + sbIcon(t[1])
-          + '<span class="sb-label">' + t[2] + '</span>'
-          + badge
-        + '</button>';
+      tabsEl.innerHTML = groups.map(function (g) {
+        var items = g.items.map(function (t) {
+          var id     = t[0];
+          var icon   = t[1];
+          var label  = t[2];
+          var action = t[3] || 'tab';
+          var badge  = (id === 'reports' && off() && n) ? '<span class="n">' + n + '</span>' : '';
+          var active = id === 'actlog' ? _ldOpen : S.tab === id;
+          return '<button data-a="' + action + '" data-v="' + id + '"'
+            + (active ? ' aria-current="page"' : '')
+            + ' data-tooltip="' + label + '">'
+            + sbIcon(icon)
+            + '<span class="sb-label">' + label + '</span>'
+            + badge
+          + '</button>';
+        }).join('');
+        return '<div class="sb-category">' + g.label + '</div>' + items;
       }).join('');
     }
 
-    /* Mobile bottom nav */
-    $('#bn').innerHTML = T2.map(function (t) {
-      return t
-        ? '<button data-a="tab" data-v="' + t[0] + '"'
-            + (S.tab === t[0] ? ' aria-current="page"' : '') + '>'
-            + ic(t[1], ' style="width:22px;height:22px"') + t[2]
-          + '</button>'
-        : (_isOfficial || _isAdmin)
-            ? ''
-            : '<button class="sb" data-a="sos" aria-label="' + T('sos') + '">SOS</button>';
+    /* Mobile bottom nav — flat list, no categories */
+    var allItems = groups.reduce(function (acc, g) { return acc.concat(g.items); }, []);
+    $('#bn').innerHTML = allItems.map(function (t) {
+      var id = t[0];
+      return '<button data-a="tab" data-v="' + id + '"'
+          + (S.tab === id ? ' aria-current="page"' : '') + '>'
+          + ic(t[1], ' style="width:22px;height:22px"') + t[2]
+        + '</button>';
     }).join('');
 
     $('#sosb').textContent = T('sos');
@@ -1416,10 +1472,7 @@
           + '<button class="admin-tab" data-tab="flood">' + T('adminTabFlood') + '</button>'
           + '<button class="admin-tab" data-tab="shelters">' + T('adminTabShelters') + '</button>'
           + '<button class="admin-tab" data-tab="codes">' + T('adminTabCodes') + '</button>'
-          + '<button class="admin-tab" data-tab="officials">' + T('adminTabOfficials') + '</button>'
-          + '<button class="admin-tab" data-tab="residents">' + T('adminTabResidents') + '</button>'
           + '<button class="admin-tab" data-tab="history">' + T('adminTabHistory') + '</button>'
-          + '<button class="admin-tab" data-tab="log">' + T('adminTabLog') + '</button>'
       + '</div>'
       + '<div class="tab-panel" id="panel-pending">'
           + '<div class="admin-section"><div class="admin-section-head"><div>'
@@ -1510,27 +1563,6 @@
           + '<div id="code-empty" class="empty" style="display:none">' + T('adminCodesEmpty') + '</div>'
       + '</div>'
       + '</div>'
-      + '<div class="tab-panel" id="panel-officials" style="display:none">'
-          + '<div class="admin-section"><div class="admin-section-head"><div>'
-              + '<h2>' + T('adminOfficialsTitle') + '</h2>'
-              + '<p>' + T('adminOfficialsSub') + '</p>'
-          + '</div><span class="badge badge-active" id="officials-count">0' + T('adminOfficialsSuffix') + '</span></div>'
-          + '<div id="officials-list"></div></div>'
-      + '</div>'
-
-      // ── Residents panel ──────────────────────────────────────────────────
-      + '<div class="tab-panel" id="panel-residents" style="display:none">'
-          + '<div class="admin-section"><div class="admin-section-head"><div>'
-              + '<h2>' + T('adminResidentsTitle') + '</h2>'
-              + '<p>' + T('adminResidentsSub') + '</p>'
-          + '</div><span class="badge badge-active" id="residents-count"></span></div>'
-          + '<div style="padding:0.9rem 1.4rem;border-bottom:1px solid var(--line2)">'
-              + '<input class="gen-input" id="residents-search" type="search" placeholder="' + T('adminResidentsSearchPlaceholder') + '" style="width:100%;max-width:360px">'
-          + '</div>'
-          + '<div id="residents-list"></div>'
-          + '<div style="text-align:center;padding:12px 0"><button class="btn o" id="residents-load-more" style="display:none">' + T('adminResidentsLoadMore') + '</button></div>'
-      + '</div>'
-      + '</div>'
 
       // ── Flood history panel ──────────────────────────────────────────────
       + '<div class="tab-panel" id="panel-history" style="display:none">'
@@ -1551,28 +1583,6 @@
           + '</tr></thead><tbody id="history-tbody"></tbody></table>'
           + '<div style="text-align:center;padding:0.75rem">'
               + '<button class="btn o" id="history-toggle-table">Show table</button>'
-          + '</div>'
-      + '</div>'
-      + '</div>'
-
-      // ── Activity log panel ───────────────────────────────────────────────
-      + '<div class="tab-panel" id="panel-log" style="display:none">'
-          + '<div class="admin-section"><div class="admin-section-head"><div>'
-              + '<h2>' + T('adminLogTitle') + '</h2>'
-              + '<p>' + T('adminLogSub') + '</p>'
-          + '</div><span class="badge badge-used" id="log-count"></span></div>'
-          + '<table class="code-table"><thead><tr>'
-              + '<th>' + T('adminLogThTime') + '</th>'
-              + '<th>' + T('adminLogThAction') + '</th>'
-              + '<th>' + T('adminLogThActor') + '</th>'
-              + '<th>' + T('adminLogThTarget') + '</th>'
-              + '<th>' + T('adminLogThDetails') + '</th>'
-          + '</tr></thead><tbody id="log-tbody"></tbody></table>'
-          + '<div id="log-empty" class="empty" style="display:none">' + T('adminLogEmpty') + '</div>'
-          + '<div id="log-pager" style="display:none;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.85rem 0 0.25rem;flex-wrap:wrap">'
-              + '<button class="btn o" id="log-prev" type="button">' + T('adminLogPrev') + '</button>'
-              + '<span id="log-page-label" style="font-size:13px;color:var(--mute)"></span>'
-              + '<button class="btn o" id="log-next" type="button">' + T('adminLogNext') + '</button>'
           + '</div>'
       + '</div>'
       + '</div>'
@@ -2242,84 +2252,321 @@
     }
 
     /* ── Activity log ────────────────────────────────────────────────────── */
-    var _logPage = 1;
+    /* ── Initial load ────────────────────────────────────────────────────── */
+    renderPending();
+    renderCodes();
+    renderFlood();
+    renderShelters();
+    renderHistory();
+  }
 
-    function renderLog(page) {
-      if (page) _logPage = page;
-      var tbody   = document.getElementById('log-tbody');
-      var empty   = document.getElementById('log-empty');
-      var countEl = document.getElementById('log-count');
-      var pager   = document.getElementById('log-pager');
-      var prevBtn = document.getElementById('log-prev');
-      var nextBtn = document.getElementById('log-next');
-      var pageLabel = document.getElementById('log-page-label');
-      if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="5" style="padding:1.2rem;color:var(--dim)">' + T('loading') + '</td></tr>';
+  /* ── Official panel ──────────────────────────────────────────────────────── */
+  function officialView() {
+    if (!_isOfficial || _isPending) return '<div class="pg"><p class="mute">Access denied.</p></div>';
+    return '<div class="admin-main">'
+      + '<div><h1 style="font-size:24px;margin:0 0 0.25rem;color:var(--ink);font-weight:700">' + T('offPanelTitle') + '</h1>'
+          + '<p style="color:var(--mute);margin:0;font-size:14px">' + T('offPanelSub') + '</p></div>'
+      + '<div class="admin-tabs" id="official-tabs">'
+          + '<button class="admin-tab active" data-tab="off-shelters">' + T('offTabShelters') + '</button>'
+      + '</div>'
 
-      api('api/admin/activity-log.php?page=' + _logPage)
+      // ── Shelters panel ───────────────────────────────────────────────────
+      + '<div class="tab-panel" id="panel-off-shelters">'
+          + '<div class="admin-section"><div class="admin-section-head"><div>'
+              + '<h2>' + T('adminShelterTitle') + '</h2>'
+              + '<p>' + T('adminShelterSub') + '</p>'
+          + '</div></div>'
+          + '<div id="off-shelters-list"></div>'
+      + '</div>'
+      + '</div>'
+
+    + '</div>';
+  }
+
+  function initOfficialPanel() {
+    var tabsEl = document.getElementById('official-tabs');
+    if (!tabsEl || tabsEl._init) return;
+    tabsEl._init = true;
+
+    tabsEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('.admin-tab');
+      if (!btn) return;
+      document.querySelectorAll('#official-tabs .admin-tab').forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('#official-tabs ~ .tab-panel').forEach(function (p) { p.style.display = 'none'; });
+      btn.classList.add('active');
+      var panelId = 'panel-' + btn.dataset.tab;
+      var panel = document.getElementById(panelId);
+      if (panel) panel.style.display = '';
+    });
+
+    function api(url, options) {
+      return fetch(url, Object.assign({ credentials: 'same-origin' }, options))
+        .then(function (r) { return r.json(); });
+    }
+
+    // ── Shelters (read-only list) ─────────────────────────────────────────
+    function renderOffShelters() {
+      var el = document.getElementById('off-shelters-list');
+      if (!el) return;
+      el.innerHTML = '<div class="empty">' + T('loading') + '</div>';
+      api('api/shelters.php')
         .then(function (data) {
-          if (!data.ok) { toast(T('adminLogLoad')); return; }
-          var entries = data.log;
-          var meta    = data.meta || {};
-          var pages   = Math.max(1, parseInt(meta.pages, 10) || 1);
-          _logPage    = Math.min(Math.max(1, parseInt(meta.page, 10) || 1), pages);
-          if (countEl) countEl.textContent = (meta.total || 0) + ' entries';
+          if (!data.ok || !data.shelters || data.shelters.length === 0) {
+            el.innerHTML = '<div class="empty">No shelters found.</div>';
+            return;
+          }
+          el.innerHTML = data.shelters.map(function (s) {
+            return '<div class="approval-row" style="flex-wrap:wrap;gap:0.5rem">'
+              + '<div class="approval-info">'
+                  + '<strong>' + s.name + '</strong>'
+                  + '<span>' + s.zone + (s.landmark ? ' — ' + s.landmark : '') + '</span>'
+              + '</div>'
+              + '<div style="display:flex;gap:0.5rem;align-items:center;font-size:13px;color:var(--mute)">'
+                  + '<span>' + s.occupancy + ' / ' + s.capacity + ' occupied</span>'
+                  + '<span class="badge ' + (s.is_open ? 'badge-active' : 'badge-expired') + '">'
+                      + (s.is_open ? 'Open' : 'Closed') + '</span>'
+              + '</div>'
+            + '</div>';
+          }).join('');
+        })
+        .catch(function () { el.innerHTML = '<div class="empty">Could not load shelters.</div>'; });
+    }
+
+    // Initial load
+    renderOffShelters();
+  }
+
+  /* ── Users panel view (admin only) ──────────────────────────────────────── */
+  function usersView() {
+    if (!_isAdmin) return '<div class="pg"><p class="mute">Access denied.</p></div>';
+    return '<div class="admin-main admin-main--wide">'
+      + '<div>'
+          + '<h1 style="font-size:24px;margin:0 0 0.25rem;color:var(--ink);font-weight:700">Users</h1>'
+          + '<p style="color:var(--mute);margin:0;font-size:14px">Manage barangay officials and registered residents.</p>'
+      + '</div>'
+      + '<div class="admin-tabs" id="users-tabs">'
+          + '<button class="admin-tab active" data-utab="officials">Officials <span class="tab-badge" id="utab-officials-count"></span></button>'
+          + '<button class="admin-tab" data-utab="residents">Residents <span class="tab-badge" id="utab-residents-count"></span></button>'
+      + '</div>'
+
+      // ── Officials tab ────────────────────────────────────────────────────
+      + '<div class="tab-panel" id="upanel-officials">'
+          + '<div class="admin-section"><div class="admin-section-head"><div>'
+              + '<h2>Barangay Officials</h2>'
+              + '<p>Active officials with access to the official panel.</p>'
+          + '</div></div>'
+          + '<table class="code-table"><thead><tr>'
+              + '<th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th></th>'
+          + '</tr></thead><tbody id="u-officials-tbody"></tbody></table>'
+          + '<div id="u-officials-empty" class="empty" style="display:none">No barangay officials yet.</div>'
+      + '</div>'
+      + '</div>'
+
+      // ── Residents tab ────────────────────────────────────────────────────
+      + '<div class="tab-panel" id="upanel-residents" style="display:none">'
+          + '<div class="admin-section"><div class="admin-section-head"><div>'
+              + '<h2>Residents</h2>'
+              + '<p>All registered resident accounts.</p>'
+          + '</div><span class="badge badge-active" id="u-residents-total"></span></div>'
+          + '<div style="padding:0.9rem 1.4rem;border-bottom:1px solid var(--line2)">'
+              + '<input class="gen-input" id="u-res-search" type="search" placeholder="Search by name, email or number…" style="width:100%;max-width:360px">'
+          + '</div>'
+          + '<table class="code-table"><thead><tr>'
+              + '<th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th></th>'
+          + '</tr></thead><tbody id="u-residents-tbody"></tbody></table>'
+          + '<div id="u-residents-empty" class="empty" style="display:none">No residents found.</div>'
+          + '<div id="u-res-pager" style="display:none;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.85rem 1.4rem;flex-wrap:wrap">'
+              + '<button class="btn o" id="u-res-prev" type="button">Previous</button>'
+              + '<span id="u-res-page-label" style="font-size:13px;color:var(--mute)"></span>'
+              + '<button class="btn o" id="u-res-next" type="button">Next</button>'
+          + '</div>'
+      + '</div>'
+      + '</div>'
+
+    + '</div>';
+  }
+
+  function initUsersPanel() {
+    var tabsEl = document.getElementById('users-tabs');
+    if (!tabsEl || tabsEl._init) return;
+    tabsEl._init = true;
+
+    // Tab switching
+    tabsEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('.admin-tab');
+      if (!btn || !btn.dataset.utab) return;
+      document.querySelectorAll('#users-tabs .admin-tab').forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('#users-tabs ~ .tab-panel').forEach(function (p) { p.style.display = 'none'; });
+      btn.classList.add('active');
+      document.getElementById('upanel-' + btn.dataset.utab).style.display = '';
+    });
+
+    function api(url, opts) {
+      return fetch(url, Object.assign({ credentials: 'same-origin' }, opts)).then(function (r) { return r.json(); });
+    }
+
+    // ── Officials ────────────────────────────────────────────────────────
+    function renderUOfficials() {
+      var tbody   = document.getElementById('u-officials-tbody');
+      var empty   = document.getElementById('u-officials-empty');
+      var countEl = document.getElementById('utab-officials-count');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:1.2rem;color:var(--dim)">Loading…</td></tr>';
+
+      api('api/admin/officials.php')
+        .then(function (data) {
+          if (!data.ok) { toast('Could not load officials.'); return; }
+          var list = data.officials;
+          if (countEl) { countEl.textContent = list.length; countEl.className = 'tab-badge' + (list.length > 0 ? ' on' : ''); }
+          if (!list.length) {
+            tbody.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+          }
+          if (empty) empty.style.display = 'none';
+          tbody.innerHTML = list.map(function (u) {
+            var av = u.avatar_path
+              ? '<img src="' + u.avatar_path + '" style="width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:6px" alt="">'
+              : '<span style="display:inline-grid;width:26px;height:26px;border-radius:50%;background:rgba(0,212,255,0.14);place-items:center;font-size:11px;font-weight:700;color:var(--ac);vertical-align:middle;margin-right:6px">' + (u.full_name || '?').charAt(0).toUpperCase() + '</span>';
+            return '<tr>'
+              + '<td style="font-size:13px;font-weight:600;color:var(--ink)">' + av + u.full_name + '</td>'
+              + '<td style="font-size:12.5px;color:var(--mute)">' + (u.email || '—') + '</td>'
+              + '<td style="font-size:12.5px;color:var(--mute)">' + (u.phone_number || '—') + '</td>'
+              + '<td><span class="badge badge-active">Active</span></td>'
+              + '<td><button class="btn o" style="font-size:12px;padding:4px 10px" data-uid="' + u.id + '">Revoke</button></td>'
+            + '</tr>';
+          }).join('');
+
+          tbody.querySelectorAll('[data-uid]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var id = parseInt(btn.dataset.uid);
+              var name = btn.closest('tr').querySelector('td').textContent.trim();
+              confirm({
+                title: 'Revoke official access?',
+                body: 'Remove official access from <b>' + name + '</b>? They will become a resident.',
+                okLabel: 'Revoke', okClass: 'o',
+                onOk: function () {
+                  btn.disabled = true;
+                  api('api/admin/officials.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: id }) })
+                    .then(function (d) {
+                      if (!d.ok) { toast(d.error || 'Failed.'); btn.disabled = false; return; }
+                      renderUOfficials();
+                      toast('Official access revoked.');
+                    });
+                }
+              });
+            });
+          });
+        });
+    }
+
+    // ── Residents ────────────────────────────────────────────────────────
+    var _resPage = 1, _resPages = 1, _resSearch = '', _resTimer = null;
+
+    function renderUResidents(reset) {
+      if (reset) _resPage = 1;
+      var tbody     = document.getElementById('u-residents-tbody');
+      var empty     = document.getElementById('u-residents-empty');
+      var totalEl   = document.getElementById('u-residents-total');
+      var pager     = document.getElementById('u-res-pager');
+      var prevBtn   = document.getElementById('u-res-prev');
+      var nextBtn   = document.getElementById('u-res-next');
+      var pageLabel = document.getElementById('u-res-page-label');
+      var countEl   = document.getElementById('utab-residents-count');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:1.2rem;color:var(--dim)">Loading…</td></tr>';
+
+      var url = 'api/admin/residents.php?page=' + _resPage + (_resSearch ? '&search=' + encodeURIComponent(_resSearch) : '');
+      api(url)
+        .then(function (data) {
+          if (!data.ok) { toast('Could not load residents.'); return; }
+          var list  = data.residents;
+          var meta  = data.meta || {};
+          _resPages = meta.pages || 1;
+          _resPage  = Math.min(Math.max(1, meta.page || 1), _resPages);
+          if (totalEl) totalEl.textContent = (meta.total || 0) + ' total';
+          if (countEl) { countEl.textContent = meta.total || 0; countEl.className = 'tab-badge' + (meta.total > 0 ? ' on' : ''); }
 
           if (pager) {
-            pager.style.display = pages > 1 ? 'flex' : 'none';
-            if (pageLabel) pageLabel.textContent = T('adminLogPage') + ' ' + _logPage + ' / ' + pages;
-            if (prevBtn) prevBtn.disabled = _logPage <= 1;
-            if (nextBtn) nextBtn.disabled = _logPage >= pages;
+            pager.style.display = _resPages > 1 ? 'flex' : 'none';
+            if (pageLabel) pageLabel.textContent = 'Page ' + _resPage + ' / ' + _resPages;
+            if (prevBtn) prevBtn.disabled = _resPage <= 1;
+            if (nextBtn) nextBtn.disabled = _resPage >= _resPages;
           }
 
-          if (entries.length === 0) {
+          if (!list.length) {
             tbody.innerHTML = '';
             if (empty) empty.style.display = '';
             return;
           }
           if (empty) empty.style.display = 'none';
 
-          var ACTIONS = T('adminLogActions') || {};
-          tbody.innerHTML = entries.map(function (e) {
+          tbody.innerHTML = list.map(function (u) {
             return '<tr>'
-              + '<td style="font-size:12px;color:var(--dim);white-space:nowrap">' + e.created_at.slice(0, 16).replace('T', ' ') + '</td>'
-              + '<td><span class="badge ' + _logBadge(e.action) + '">' + (ACTIONS[e.action] || e.action) + '</span></td>'
-              + '<td style="font-size:13px;color:var(--ink)">' + (e.actor_name || '—') + '</td>'
-              + '<td style="font-size:13px;color:var(--mute)">' + (e.target_name || '—') + '</td>'
-              + '<td style="font-size:12.5px;color:var(--mute);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (e.details || '—') + '</td>'
+              + '<td style="font-size:13px;font-weight:600;color:var(--ink)">' + u.full_name + '</td>'
+              + '<td style="font-size:12.5px;color:var(--mute)">' + (u.email || '—') + '</td>'
+              + '<td style="font-size:12.5px;color:var(--mute)">' + (u.phone_number || '—') + '</td>'
+              + '<td style="font-size:12px;color:var(--dim)">' + u.created_at.slice(0, 10) + '</td>'
+              + '<td><button class="btn o" style="font-size:12px;padding:4px 10px" data-rpid="' + u.id + '">Reset PW</button></td>'
             + '</tr>';
           }).join('');
-        })
-        .catch(function () { toast(T('adminLogLoad')); });
+
+          // Reset password buttons
+          tbody.querySelectorAll('[data-rpid]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var id   = parseInt(btn.dataset.rpid);
+              var name = btn.closest('tr').querySelector('td').textContent.trim();
+              confirm({
+                title: 'Reset password?',
+                body:  'Issue a temporary password for <b>' + name + '</b>? They must change it on next login.',
+                okLabel: 'Reset', okClass: 'ac',
+                onOk: function () {
+                  btn.disabled = true;
+                  api('api/admin/residents.php', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reset_password', user_id: id })
+                  }).then(function (d) {
+                    btn.disabled = false;
+                    if (!d.ok) { toast(d.error || 'Failed.'); return; }
+                    confirm({
+                      title: 'Temporary password',
+                      body:  'Share this password with <b>' + name + '</b>:<br><br>'
+                        + '<code style="font-size:15px;letter-spacing:0.1em;padding:4px 8px;background:var(--s2);border-radius:4px">' + d.temp_password + '</code>',
+                      okLabel: 'Done', okClass: 'ac',
+                      onOk: function () {}
+                    });
+                  });
+                }
+              });
+            });
+          });
+        });
     }
 
-    function _logBadge(action) {
-      if (action === 'approve_official' || action === 'add_shelter' || action === 'generate_invite_code') return 'badge-active';
-      if (action === 'reject_official' || action === 'revoke_official' || action === 'revoke_invite_code') return 'badge-expired';
-      if (action === 'reset_password')  return 'badge-pending';
-      if (action === 'set_flood_level' || action === 'update_shelter') return 'badge-unused';
-      return 'badge-used';
+    // Search
+    var searchEl = document.getElementById('u-res-search');
+    if (searchEl) {
+      searchEl.addEventListener('input', function () {
+        clearTimeout(_resTimer);
+        var v = searchEl.value.trim();
+        _resTimer = setTimeout(function () { _resSearch = v; renderUResidents(true); }, 350);
+      });
     }
 
-    var logPrev = document.getElementById('log-prev');
-    var logNext = document.getElementById('log-next');
-    if (logPrev) logPrev.addEventListener('click', function () { if (_logPage > 1) renderLog(_logPage - 1); });
-    if (logNext) logNext.addEventListener('click', function () { renderLog(_logPage + 1); });
+    // Pagination
+    var prevBtn = document.getElementById('u-res-prev');
+    var nextBtn = document.getElementById('u-res-next');
+    if (prevBtn) prevBtn.addEventListener('click', function () { if (_resPage > 1) { _resPage--; renderUResidents(false); } });
+    if (nextBtn) nextBtn.addEventListener('click', function () { if (_resPage < _resPages) { _resPage++; renderUResidents(false); } });
 
-    /* ── Initial load ────────────────────────────────────────────────────── */
-    renderPending();
-    renderCodes();
-    renderOfficials();
-    renderFlood();
-    renderShelters();
-    renderResidents(true);
-    renderHistory();
-    renderLog();
+    // Initial load
+    renderUOfficials();
+    renderUResidents(true);
   }
 
   function render() {
     var scrollY = window.scrollY;
-    var views   = { radar: radar, centers: centers, reports: reports, hotlines: hotlines, admin: adminView };
+    var views   = { radar: radar, centers: centers, reports: reports, hotlines: hotlines, admin: adminView, official: officialView, users: usersView };
     $('#pg').innerHTML = (views[S.tab] || radar)();
     band();
     netbar();
@@ -2330,6 +2577,8 @@
       if (led) { _renderReportRows(led); _renderLoadMore(); }
     }
     if (S.tab === 'admin') { initAdminPanel(); }
+    if (S.tab === 'official') { initOfficialPanel(); }
+    if (S.tab === 'users') { initUsersPanel(); }
     document.documentElement.lang = S.lang === 'fil' ? 'fil' : 'en';
 
     // Sync language toggle pressed state
@@ -2586,7 +2835,111 @@
   }
 
   /* ── Action handlers ─────────────────────────────────────────────────────── */
+
+  /* ── Activity Log Drawer ─────────────────────────────────────────────────── */
+  var _ldPage = 1;
+  var _ldOpen = false;
+
+  function _ldBadge(action) {
+    if (action === 'approve_official' || action === 'add_shelter' || action === 'generate_invite_code') return 'badge-active';
+    if (action === 'reject_official'  || action === 'revoke_official' || action === 'revoke_invite_code') return 'badge-expired';
+    if (action === 'reset_password')  return 'badge-pending';
+    if (action === 'set_flood_level'  || action === 'update_shelter') return 'badge-unused';
+    return 'badge-used';
+  }
+
+  function _ldLoad(page) {
+    if (page) _ldPage = page;
+    var list      = document.getElementById('ld-list');
+    var empty     = document.getElementById('ld-empty');
+    var countEl   = document.getElementById('ld-count');
+    var pager     = document.getElementById('ld-pager');
+    var prevBtn   = document.getElementById('ld-prev');
+    var nextBtn   = document.getElementById('ld-next');
+    var pageLabel = document.getElementById('ld-page-label');
+    if (!list) return;
+
+    list.innerHTML = '<div style="padding:1.5rem;color:var(--mute);font-size:13px">' + T('loading') + '</div>';
+
+    var url = _isAdmin
+      ? 'api/admin/activity-log.php?page=' + _ldPage
+      : 'api/admin/activity-log-official.php?page=' + _ldPage;
+
+    fetch(url, { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { list.innerHTML = '<div class="log-drawer-empty">Could not load activity log.</div>'; return; }
+        var entries = data.log;
+        var meta    = data.meta || {};
+        var pages   = Math.max(1, parseInt(meta.pages, 10) || 1);
+        _ldPage     = Math.min(Math.max(1, parseInt(meta.page, 10) || 1), pages);
+        if (countEl) countEl.textContent = (meta.total || 0) + ' entries';
+
+        if (pager) {
+          pager.style.display = pages > 1 ? 'flex' : 'none';
+          if (pageLabel) pageLabel.textContent = 'Page ' + _ldPage + ' / ' + pages;
+          if (prevBtn) prevBtn.disabled = _ldPage <= 1;
+          if (nextBtn) nextBtn.disabled = _ldPage >= pages;
+        }
+
+        if (!entries.length) {
+          list.innerHTML = '';
+          if (empty) empty.style.display = '';
+          return;
+        }
+        if (empty) empty.style.display = 'none';
+
+        var ACTIONS = T('adminLogActions') || {};
+        list.innerHTML = entries.map(function (e) {
+          return '<div class="log-entry">'
+            + '<div class="log-entry-top">'
+              + '<span class="badge ' + _ldBadge(e.action) + '" style="font-size:11px">' + (ACTIONS[e.action] || e.action) + '</span>'
+              + (e.actor_name ? '<span class="log-entry-actor">' + e.actor_name + '</span>' : '')
+              + '<span class="log-entry-time">' + e.created_at.slice(0, 16).replace('T', ' ') + '</span>'
+            + '</div>'
+            + (e.target_name ? '<div class="log-entry-target">→ ' + e.target_name + '</div>' : '')
+            + (e.details ? '<div class="log-entry-details">' + e.details + '</div>' : '')
+          + '</div>';
+        }).join('');
+      })
+      .catch(function () { list.innerHTML = '<div class="log-drawer-empty">Could not reach the server.</div>'; });
+  }
+
+  function _ldOpenDrawer() {
+    var drawer  = document.getElementById('log-drawer');
+    var overlay = document.getElementById('log-drawer-overlay');
+    if (!drawer) return;
+    _ldOpen = true;
+    drawer.classList.add('open');
+    document.body.classList.add('log-drawer-open');
+    if (overlay && window.innerWidth < 900) overlay.classList.add('on');
+    _ldLoad(1);
+  }
+
+  function _ldCloseDrawer() {
+    var drawer  = document.getElementById('log-drawer');
+    var overlay = document.getElementById('log-drawer-overlay');
+    _ldOpen = false;
+    if (drawer)  drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('on');
+    if (!_ldOpen) document.body.classList.remove('log-drawer-open');
+    nav();
+  }
+
+  // Wire close button and overlay
+  (function () {
+    var closeBtn = document.getElementById('log-drawer-close');
+    var overlay  = document.getElementById('log-drawer-overlay');
+    var prevBtn  = document.getElementById('ld-prev');
+    var nextBtn  = document.getElementById('ld-next');
+    if (closeBtn) closeBtn.addEventListener('click', _ldCloseDrawer);
+    if (overlay)  overlay.addEventListener('click', _ldCloseDrawer);
+    if (prevBtn)  prevBtn.addEventListener('click', function () { if (_ldPage > 1) _ldLoad(_ldPage - 1); });
+    if (nextBtn)  nextBtn.addEventListener('click', function () { _ldLoad(_ldPage + 1); });
+  }());
+
   var A = {
+    actlog: function () { _ldOpen ? _ldCloseDrawer() : _ldOpenDrawer(); },
     tab:   function (v)     { S.tab = v; render(); },
     route: function (v) {
       var idx = +v;
@@ -3295,7 +3648,7 @@
 
   /* ── Initial render ──────────────────────────────────────────────────────── */
   var _urlTab = new URLSearchParams(window.location.search).get('tab');
-  if (_urlTab && { radar: 1, centers: 1, reports: 1, hotlines: 1, admin: 1 }[_urlTab]) {
+  if (_urlTab && { radar: 1, centers: 1, reports: 1, hotlines: 1, admin: 1, official: 1, users: 1 }[_urlTab]) {
     S.tab = _urlTab;
   }
 

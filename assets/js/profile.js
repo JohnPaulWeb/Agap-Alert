@@ -88,7 +88,7 @@
   /* ── Chip avatar ─────────────────────────────────────────────────────────── */
   function updateChipAvatar() {
     var nameEl    = document.getElementById('user-name');
-    var avatarSrc = user.avatar_path || null;
+    var avatarSrc = user.avatar_path || user.google_avatar_url || null;
     if (avatarSrc) {
       nameEl.innerHTML = '<img src="' + avatarSrc + '" alt="" style="width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:4px">' + (user.full_name || '');
     } else {
@@ -103,7 +103,9 @@
     var avatarEl  = document.getElementById('avatar-el');
     var initialEl = document.getElementById('avatar-initial');
     var removeBtn = document.getElementById('avatar-remove');
-    var avatarSrc = user.avatar_path || null;
+    // Use uploaded avatar first, then Google profile photo, then initial fallback
+    var avatarSrc    = user.avatar_path || null;
+    var googleAvatar = user.google_avatar_url || null;
 
     if (avatarSrc) {
       initialEl.style.display = 'none';
@@ -116,6 +118,17 @@
       }
       existImg.src = avatarSrc;
       removeBtn.style.display = 'block';
+    } else if (googleAvatar) {
+      initialEl.style.display = 'none';
+      var existImg = avatarEl.querySelector('img');
+      if (!existImg) {
+        var img = document.createElement('img');
+        img.alt = user.full_name || '';
+        avatarEl.appendChild(img);
+        existImg = img;
+      }
+      existImg.src = googleAvatar;
+      removeBtn.style.display = 'none';   // can't "remove" a Google photo
     } else {
       initialEl.style.display = '';
       initialEl.textContent   = initial;

@@ -40,12 +40,21 @@ document.getElementById('has-invite').addEventListener('change', function () {
 
 /* ── Privacy notice dialog ──────────────────────────────────────────────────── */
 var privacyDialog = document.getElementById('privacy-dialog');
+
 document.getElementById('show-privacy').addEventListener('click', function () {
-  if (privacyDialog && privacyDialog.showModal) privacyDialog.showModal();
+  if (privacyDialog) privacyDialog.style.display = 'flex';
 });
+
 document.getElementById('close-privacy').addEventListener('click', function () {
-  if (privacyDialog && privacyDialog.close) privacyDialog.close();
+  if (privacyDialog) privacyDialog.style.display = 'none';
 });
+
+// Also close when clicking the dark backdrop
+if (privacyDialog) {
+  privacyDialog.addEventListener('click', function (e) {
+    if (e.target === privacyDialog) privacyDialog.style.display = 'none';
+  });
+}
 
 /* ── Form submission ────────────────────────────────────────────────────────── */
 document.getElementById('register-form').addEventListener('submit', function (e) {
@@ -76,7 +85,7 @@ document.getElementById('register-form').addEventListener('submit', function (e)
   if (lname.length < 1 || lname.length > 50)
     errors['lname'] = 'Enter your last name.';
 
-  if (!/^[0-9+()\-\s]{7,40}$/.test(phone))
+  if (phone === '' || !/^[0-9+()\-\s]{7,40}$/.test(phone))
     errors['phone'] = 'Enter a valid mobile number.';
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
