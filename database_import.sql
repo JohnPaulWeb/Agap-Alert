@@ -1,7 +1,6 @@
 -- =============================================================================
 -- AgapAlert Database — InfinityFree Import
--- Import this file via phpMyAdmin (NOT database.sql)
--- The CREATE DATABASE and USE statements are removed for hosted environments.
+-- Use this file for phpMyAdmin import (no CREATE DATABASE / USE / DELIMITER).
 -- =============================================================================
 
 -- USERS
@@ -101,7 +100,7 @@ CREATE TABLE IF NOT EXISTS reports (
 -- FLOOD LEVELS
 CREATE TABLE IF NOT EXISTS flood_levels (
     id         INT UNSIGNED     AUTO_INCREMENT PRIMARY KEY,
-    level      TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    level      TINYINT UNSIGNED NOT NULL DEFAULT 0  COMMENT '0=Normal 1=Watch 2=Warning 3=Critical',
     wind_kmh   DECIMAL(5,1)     NOT NULL DEFAULT 0,
     rain_mmh   DECIMAL(5,1)     NOT NULL DEFAULT 0,
     notes      VARCHAR(255)     NULL,
@@ -141,6 +140,7 @@ CREATE TABLE IF NOT EXISTS reset_requests (
 );
 
 -- GOOGLE OTP VERIFICATION
+-- Stores temporary OTP codes for 2-step verification after Google sign-in.
 CREATE TABLE IF NOT EXISTS google_otps (
     id         INT UNSIGNED     AUTO_INCREMENT PRIMARY KEY,
     user_id    INT UNSIGNED     NOT NULL,
@@ -167,7 +167,6 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 
 -- Note: Stored procedures are not supported on InfinityFree free hosting.
--- The RecordWeather procedure is handled directly in api/weather.php instead.
 
 -- DEFAULT DATA
 INSERT IGNORE INTO users (id, fname, lname, email, password_hash, role, status)

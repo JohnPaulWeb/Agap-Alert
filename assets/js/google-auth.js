@@ -50,6 +50,25 @@ function _handleGoogleToken(idToken) {
 
       // OTP required — redirect to verify page
       if (data.requires_otp) {
+
+        // On register page: if account already exists, warn and redirect to login
+        if (_googleMode === 'register' && !data.is_new) {
+          if (errorEl) {
+            errorEl.innerHTML = '';
+            errorEl.style.display = '';
+            errorEl.appendChild(document.createTextNode(
+              'This Google account is already registered. Please sign in instead.'
+            ));
+            var a = document.createElement('a');
+            a.href = 'login.html';
+            a.textContent = ' Sign in →';
+            a.style.cssText = 'margin-left:0.4rem;font-weight:700;text-decoration:underline;color:inherit;';
+            errorEl.appendChild(a);
+          }
+          if (btn) { btn.disabled = false; btn.classList.remove('btn-google--loading'); }
+          return;
+        }
+
         sessionStorage.setItem('agapalert_otp_token', data.otp_token);
         sessionStorage.setItem('agapalert_otp_email', data.email_hint || '');
         sessionStorage.setItem('agapalert_otp_isnew', data.is_new ? '1' : '0');
