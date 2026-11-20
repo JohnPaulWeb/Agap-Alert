@@ -88,7 +88,7 @@ function _handleGoogleToken(idToken) {
       }
 
       // ── Register page: account already exists ─────────────────────────────
-      if (_googleMode === 'register' && data.requires_otp && !data.is_new) {
+      if (_googleMode === 'register' && !data.is_new) {
         if (errorEl) {
           errorEl.style.display = '';
           errorEl.innerHTML = '';

@@ -137,12 +137,10 @@ if ($user['status'] === 'rejected') {
     json_response(['ok' => false, 'error' => 'Your account access has been denied. Contact the administrator.'], 403);
 }
 
-// ── 2-Step: only require OTP for new registrations, not returning users ───────
-if (!$isNew) {
-    // Returning user — sign in directly, no OTP needed
-    sign_in((int) $user['id']);
-    json_response(['ok' => true, 'is_new' => false, 'user' => $user]);
-}
+// ── Sign in directly — no OTP ─────────────────────────────────────────────────
+sign_in((int) $user['id']);
+
+json_response(['ok' => true, 'is_new' => $isNew, 'user' => $user]);
 
 // New user — generate OTP and email it before granting access
 require_once __DIR__ . '/../../config/mail_helper.php';
@@ -175,13 +173,4 @@ if (!empty($user['email'])) {
         . "If you did not request this, ignore this email.\n\n"
         . "— AgapAlert, Barangay Dalongue DRRMC"
     );
-}
 
-json_response([
-    'ok'           => true,
-    'requires_otp' => true,
-    'is_new'       => $isNew,
-    'otp_token'    => $otpToken,
-    'email_hint'   => $user['email'] ? preg_replace('/(?<=.).(?=[^@]*@)/u', '*', $user['email']) : null,
-    'email_sent'   => $emailSent,
-]);
