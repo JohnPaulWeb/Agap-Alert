@@ -1,7 +1,14 @@
 /**
  * google-auth.js
- * Uses Google Identity Services tokenClient (OAuth2 popup) so the account
- * picker always opens reliably on button click — no One Tap suppression issues.
+ * Handles "Continue with Google account" for login and register pages.
+ *
+ * Login page:
+ *   - Existing account → sign in directly (no OTP for returning users)
+ *   - No account       → show error with "Register here →" link
+ *
+ * Register page:
+ *   - No account yet   → prefill form with Google profile data
+ *   - Already exists   → show error with "Sign in →" link
  */
 
 var _googleMode = window.location.pathname.indexOf('register') !== -1 ? 'register' : 'login';
@@ -10,7 +17,7 @@ function _handleGoogleToken(idToken) {
   var errorEl = document.getElementById('google-error');
   var btn     = document.getElementById('google-btn');
 
-  if (errorEl) { errorEl.innerHTML = ''; errorEl.style.display = 'none'; }
+  if (errorEl) { errorEl.innerHTML = ''; errorEl.style.display = 'none'; errorEl.className = 'notice notice-error'; }
   if (btn)     { btn.disabled = true; btn.classList.add('btn-google--loading'); }
 
   fetch('api/auth/google.php', {
@@ -28,6 +35,7 @@ function _handleGoogleToken(idToken) {
     .then(function (data) {
       if (btn) { btn.disabled = false; btn.classList.remove('btn-google--loading'); }
 
+      // ── Error responses ───────────────────────────────────────────────────
       if (!data.ok) {
         var msg = data.needs_register
           ? 'No account found. Please register first.'
@@ -48,10 +56,68 @@ function _handleGoogleToken(idToken) {
         return;
       }
 
+      // ── Register page: prefill form with Google profile ───────────────────
+      if (data.prefill_only && _googleMode === 'register') {
+        var p = data.profile;
+        sessionStorage.setItem('agapalert_google_prefill', JSON.stringify(p));
+
+        var fnEl = document.getElementById('fname');
+        var lnEl = document.getElementById('lname');
+        var emEl = document.getElementById('email');
+        if (fnEl && p.fname) fnEl.value = p.fname;
+        if (lnEl && p.lname) lnEl.value = p.lname;
+        if (emEl && p.email) {
+          emEl.value     = p.email;
+          emEl.readOnly  = true;
+          emEl.style.opacity = '0.65';
+        }
+
+        // Hide Google button and divider
+        var gBtn = document.getElementById('google-btn');
+        var div  = document.querySelector('.auth-divider');
+        if (gBtn) gBtn.style.display = 'none';
+        if (div)  div.style.display  = 'none';
+
+        // Show success notice
+        if (errorEl) {
+          errorEl.className    = 'notice notice-success';
+          errorEl.textContent  = 'Google account connected. Fill in the remaining fields to complete registration.';
+          errorEl.style.display = '';
+        }
+        return;
+      }
+
+      // ── Register page: account already exists ─────────────────────────────
+      if (_googleMode === 'register' && !data.is_new) {
+        if (errorEl) {
+          errorEl.style.display = '';
+          errorEl.innerHTML = '';
+          errorEl.appendChild(document.createTextNode(
+            'This Google account is already registered. Please sign in instead.'
+          ));
+          var a2 = document.createElement('a');
+          a2.href = 'login.html';
+          a2.textContent = ' Sign in →';
+          a2.style.cssText = 'margin-left:0.4rem;font-weight:700;text-decoration:underline;color:inherit;';
+          errorEl.appendChild(a2);
+        }
+        return;
+      }
+
+      // ── OTP required (new registration) ──────────────────────────────────
+      if (data.requires_otp) {
+        sessionStorage.setItem('agapalert_otp_token', data.otp_token);
+        sessionStorage.setItem('agapalert_otp_email', data.email_hint || '');
+        sessionStorage.setItem('agapalert_otp_isnew', data.is_new ? '1' : '0');
+        window.location.href = 'verify-otp.html';
+        return;
+      }
+
+      // ── Signed in directly (returning user, no OTP) ───────────────────────
       localStorage.setItem('agapalert_user', JSON.stringify(data.user));
       localStorage.setItem('agapalert_flash', JSON.stringify({
         type:    'success',
-        message: data.is_new ? 'Account created with Google. Welcome to AgapAlert.' : 'Signed in with Google. Welcome back.',
+        message: 'Signed in with Google. Welcome back.',
       }));
       window.location.href = 'index.html';
     })
@@ -64,7 +130,7 @@ function _handleGoogleToken(idToken) {
     });
 }
 
-// Called by GIS library via the data-callback attribute (One Tap fallback)
+// Called by GIS library
 window.handleGoogleCredential = function (response) {
   _handleGoogleToken(response.credential);
 };
@@ -78,18 +144,16 @@ window.handleGoogleCredential = function (response) {
       var btn = document.getElementById('google-btn');
       if (!btn) return;
 
-      // Load GIS script
       var script   = document.createElement('script');
       script.src   = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
 
       script.onload = function () {
-        // Use renderButton inside a real (visible) wrapper — GIS clicks it on our behalf
         var gisWrap = document.createElement('div');
         gisWrap.id  = 'gis-real-btn';
         gisWrap.style.cssText = 'position:absolute;width:100%;height:100%;top:0;left:0;opacity:0;overflow:hidden;cursor:pointer;';
-        btn.style.position = 'relative';   // ensure the wrapper positions inside btn
+        btn.style.position = 'relative';
         btn.appendChild(gisWrap);
 
         google.accounts.id.initialize({
@@ -98,7 +162,6 @@ window.handleGoogleCredential = function (response) {
           ux_mode:   'popup',
         });
 
-        // Render GIS button into the transparent overlay — same size as our button
         google.accounts.id.renderButton(gisWrap, {
           type:  'standard',
           theme: 'outline',

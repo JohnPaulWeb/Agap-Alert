@@ -103,38 +103,35 @@
     var avatarEl  = document.getElementById('avatar-el');
     var initialEl = document.getElementById('avatar-initial');
     var removeBtn = document.getElementById('avatar-remove');
-    // Use uploaded avatar first, then Google profile photo, then initial fallback
-    var avatarSrc    = user.avatar_path || null;
-    var googleAvatar = user.google_avatar_url || null;
+
+    // Priority: uploaded photo → Google photo → initial letter
+    var avatarSrc = user.avatar_path || user.google_avatar_url || null;
+    var isGoogle  = !user.avatar_path && !!user.google_avatar_url;
 
     if (avatarSrc) {
-      initialEl.style.display = 'none';
-      var existImg = avatarEl.querySelector('img');
-      if (!existImg) {
-        var img = document.createElement('img');
+      // Hide the initial letter
+      if (initialEl) initialEl.style.display = 'none';
+      // Find or create the img element
+      var img = avatarEl.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
         img.alt = user.full_name || '';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
         avatarEl.appendChild(img);
-        existImg = img;
       }
-      existImg.src = avatarSrc;
-      removeBtn.style.display = 'block';
-    } else if (googleAvatar) {
-      initialEl.style.display = 'none';
-      var existImg = avatarEl.querySelector('img');
-      if (!existImg) {
-        var img = document.createElement('img');
-        img.alt = user.full_name || '';
-        avatarEl.appendChild(img);
-        existImg = img;
-      }
-      existImg.src = googleAvatar;
-      removeBtn.style.display = 'none';   // can't "remove" a Google photo
+      img.src = avatarSrc;
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+      // Show remove button only for uploaded photos, not Google photos
+      if (removeBtn) removeBtn.style.display = isGoogle ? 'none' : 'block';
     } else {
-      initialEl.style.display = '';
-      initialEl.textContent   = initial;
+      // No photo — show initial letter, remove any img
       var oldImg = avatarEl.querySelector('img');
       if (oldImg) oldImg.remove();
-      removeBtn.style.display = 'none';
+      if (initialEl) {
+        initialEl.style.display = '';
+        initialEl.textContent   = initial;
+      }
+      if (removeBtn) removeBtn.style.display = 'none';
     }
 
     document.getElementById('display-name').textContent = user.full_name || '—';
@@ -160,6 +157,22 @@
   }
 
   populate();
+
+  // If localStorage has stale data (no google_avatar_url despite having google_id),
+  // fetch fresh user data immediately so the Google profile picture shows right away.
+  if (user.google_id && !user.google_avatar_url) {
+    fetch('api/me.php', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok && data.user && data.user.google_avatar_url) {
+          user = data.user;
+          localStorage.setItem('agapalert_user', JSON.stringify(user));
+          populate();
+          updateChipAvatar();
+        }
+      })
+      .catch(function () {});
+  }
 
   /* ── Avatar upload ───────────────────────────────────────────────────────── */
   document.getElementById('avatar-input').addEventListener('change', function () {
@@ -302,6 +315,37 @@
       }
       user = data.user;
       localStorage.setItem('agapalert_user', JSON.stringify(user));
+
+      // ── Google account adjustments ────────────────────────────────────────
+      var isGoogleOnly = !!user.google_id && !user.phone_number;
+      var hasGoogle    = !!user.google_id;
+
+      // Lock the email field — Google email should not be changed
+      if (hasGoogle) {
+        var emailEl = document.getElementById('pf-email');
+        if (emailEl) {
+          emailEl.readOnly = true;
+          emailEl.style.opacity = '0.65';
+          emailEl.style.cursor  = 'default';
+          emailEl.title = 'Email is linked to your Google account and cannot be changed here.';
+        }
+        var emailLabel = document.querySelector('label[for="pf-email"]');
+        if (emailLabel && !emailLabel.querySelector('.google-lock')) {
+          var lock = document.createElement('span');
+          lock.className = 'google-lock';
+          lock.style.cssText = 'margin-left:4px;font-size:11px;color:var(--mute);font-weight:400;text-transform:none;letter-spacing:0';
+          lock.textContent = '(linked to Google)';
+          emailLabel.appendChild(lock);
+        }
+      }
+
+      // Hide password card for Google-only accounts (no password set)
+      var pwCard = document.getElementById('pw-card');
+      if (pwCard && hasGoogle && !data.user.has_password) {
+        pwCard.innerHTML = '<div class="form-card-head"><h3>Password</h3>'
+          + '<p>You sign in with Google. No password is set for this account.</p></div>';
+      }
+
       _mustChange = user.must_change_password == 1 || user.must_change_password === true;
       if (_mustChange) {
         applyForcedChangeUI();

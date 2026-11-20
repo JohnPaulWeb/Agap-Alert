@@ -4,11 +4,12 @@
  * Returns a PDO connection. Call db() anywhere you need the database.
  */
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'agapalert');
-define('DB_USER', 'root');
-define('DB_PASS', '');          // Change this in production
+define('DB_HOST',    'sql208.infinityfree.com');
+define('DB_NAME',    'if0_43486025_agapalert');
+define('DB_USER',    'if0_43486025');
+define('DB_PASS',    '9JEONrl3UrsKLp8');
 define('DB_CHARSET', 'utf8mb4');
+
 
 function db(): PDO {
     static $pdo = null;

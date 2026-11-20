@@ -1,16 +1,11 @@
 <?php
 /**
  * api/auth/google.php
- * POST — verify a Google ID token and sign the user in (or create an account).
+ * POST — verify a Google ID token and sign the user in.
  *
- * Request body (JSON):
- *   { "credential": "<Google ID token JWT>" }
- *
- * Behaviour:
- *   - Existing account  → sign in directly.
- *   - No account found  → create one automatically, return { ok: true, is_new: true }.
- *     The frontend decides what to do next (login page redirects to register to
- *     collect the remaining required fields; register page proceeds normally).
+ * Login mode:  finds existing account → signs in directly.
+ * Register mode: if no account → returns profile data for form prefill.
+ *                if account exists → signs in directly.
  */
 require_once __DIR__ . '/../../api/bootstrap.php';
 require_method('POST');
@@ -29,7 +24,7 @@ if (empty($clientId)) {
 // ── Get the credential from the request ──────────────────────────────────────
 $body       = json_body();
 $credential = trim($body['credential'] ?? '');
-$mode       = $body['mode'] ?? 'register';  // 'login' or 'register'
+$mode       = $body['mode'] ?? 'register';
 
 if (empty($credential)) {
     json_response(['ok' => false, 'error' => 'Missing Google credential.'], 400);
@@ -68,7 +63,8 @@ function fetchUser(PDO $db, int $id): array|false {
     $stmt = $db->prepare(
         'SELECT id, fname, mname, lname,
                 CONCAT(fname, IF(mname IS NOT NULL AND mname != "", CONCAT(" ", mname, " "), " "), lname) AS full_name,
-                email, phone_number, role, status, avatar_path, google_avatar_url,
+                email, phone_number, role, status, avatar_path, google_avatar_url, google_id,
+                (password_hash IS NOT NULL) AS has_password,
                 invite_code, must_change_password, created_at
          FROM users WHERE id = ? LIMIT 1'
     );
@@ -77,9 +73,8 @@ function fetchUser(PDO $db, int $id): array|false {
 }
 
 // ── Find the user ─────────────────────────────────────────────────────────────
-$db     = db();
-$row    = null;
-$isNew  = false;
+$db  = db();
+$row = null;
 
 // 1. Find by google_id (returning user)
 $stmt = $db->prepare('SELECT id FROM users WHERE google_id = ? LIMIT 1');
@@ -91,14 +86,13 @@ if (!$row && !empty($email)) {
     $stmt = $db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $row = $stmt->fetch() ?: null;
-
     if ($row) {
         $db->prepare('UPDATE users SET google_id = ?, google_avatar_url = ? WHERE id = ?')
            ->execute([$googleId, $picture ?: null, $row['id']]);
     }
 }
 
-// ── If no account exists: block on login, create on register ─────────────────
+// ── No account found ─────────────────────────────────────────────────────────
 if (!$row) {
     if ($mode === 'login') {
         json_response([
@@ -108,20 +102,21 @@ if (!$row) {
         ], 404);
     }
 
-    // Register mode — create a new account
-    $isNew = true;
-    $fname = $givenName  ?: 'Google';
-    $lname = $familyName ?: 'User';
-
-    $db->prepare(
-        'INSERT INTO users (fname, lname, email, google_id, google_avatar_url, role, status, privacy_accepted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
-    )->execute([$fname, $lname, $email, $googleId, $picture ?: null, 'resident', 'active']);
-
-    $row = ['id' => (int) $db->lastInsertId()];
+    // Register mode — return profile data for form prefill, don't create account yet
+    json_response([
+        'ok'           => true,
+        'prefill_only' => true,
+        'profile'      => [
+            'fname'             => $givenName,
+            'lname'             => $familyName,
+            'email'             => $email,
+            'google_id'         => $googleId,
+            'google_avatar_url' => $picture,
+        ],
+    ]);
 }
 
-// Always refresh the Google avatar URL in case it changed
+// ── Existing account — refresh avatar and sign in ────────────────────────────
 if (!empty($picture)) {
     $db->prepare('UPDATE users SET google_avatar_url = ? WHERE id = ?')
        ->execute([$picture, $row['id']]);
@@ -129,12 +124,10 @@ if (!empty($picture)) {
 
 $user = fetchUser($db, (int) $row['id']);
 
-// ── Guard: rejected accounts cannot sign in ──────────────────────────────────
 if ($user['status'] === 'rejected') {
     json_response(['ok' => false, 'error' => 'Your account access has been denied. Contact the administrator.'], 403);
 }
 
-// ── Sign in ───────────────────────────────────────────────────────────────────
 sign_in((int) $user['id']);
 
-json_response(['ok' => true, 'is_new' => $isNew, 'user' => $user]);
+json_response(['ok' => true, 'is_new' => false, 'user' => $user]);

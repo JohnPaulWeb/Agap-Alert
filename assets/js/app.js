@@ -21,6 +21,21 @@
       }
       // Keep localStorage in sync with DB (role/status may have changed)
       localStorage.setItem('agapalert_user', JSON.stringify(data.user));
+      // Update the in-memory user so avatar/name reflect latest data
+      _user = data.user;
+      // Defer so _updateSidebarUserChip is defined before we call it
+      setTimeout(function () {
+        if (typeof _updateSidebarUserChip === 'function') _updateSidebarUserChip();
+        var hdAvatar = document.getElementById('hd-user-avatar');
+        if (hdAvatar) {
+          var src = _user.avatar_path || _user.google_avatar_url || null;
+          hdAvatar.innerHTML = src
+            ? '<img src="' + src + '" alt="" style="width:30px;height:30px;border-radius:50%;object-fit:cover;display:block">'
+            : '<span style="width:30px;height:30px;border-radius:50%;background:var(--ac);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--acon)">'
+                + (_user.full_name ? _user.full_name.charAt(0).toUpperCase() : '?')
+              + '</span>';
+        }
+      }, 0);
 
       // If admin reset the password while the user was already logged in,
       // enforce the change now even without going through login.js again.
@@ -1352,7 +1367,14 @@
                                 + ' style="width:80px;padding:4px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--s2);color:var(--ink);font-size:14px">'
                             + '<button class="btn s" data-a="upd-shelter" data-v="' + i + '">' + T('save') + '</button>'
                           + '</div>'
-                        : '')
+                        : '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+                            + '<button class="btn s" data-a="checkin"  data-v="' + i + '" id="checkin-btn-'  + i + '">'
+                                + ic('home') + (S.lang === 'fil' ? 'Mag-check in' : 'Check In')
+                            + '</button>'
+                            + '<button class="btn s o" data-a="checkout" data-v="' + i + '" id="checkout-btn-' + i + '" style="display:none">'
+                                + (S.lang === 'fil' ? 'Mag-check out' : 'Check Out')
+                            + '</button>'
+                          + '</div>')
                 + '</div></div>'
               + '</div>';
             }).join('')
@@ -1502,7 +1524,7 @@
 
   /* ── Header user menu ────────────────────────────────────────────────────── */
   (function _initHeaderUserMenu() {
-    var avatarSrc = _user.avatar_path ? _user.avatar_path : (_user.avatar || null);
+    var avatarSrc = _user.avatar_path || _user.google_avatar_url || (_user.avatar || null);
     var roleLabel = _isAdmin ? 'Administrator'
       : _isOfficial ? (_isPending ? 'Official (pending)' : 'Barangay official')
       : 'Resident';
@@ -1573,7 +1595,7 @@
   function _updateSidebarUserChip() {
     var el = document.getElementById('user-chip-side');
     if (!el) return;
-    var avatarSrc = _user.avatar_path ? _user.avatar_path : (_user.avatar || null);
+    var avatarSrc = _user.avatar_path || _user.google_avatar_url || (_user.avatar || null);
     var roleLabel = _isAdmin ? 'Administrator'
       : _isOfficial ? (_isPending ? 'Official (pending)' : 'Barangay official')
       : 'Resident';
@@ -3234,6 +3256,24 @@
     );
   }
 
+  /* ── Shelter check-in UI helper ─────────────────────────────────────────── */
+  function _updateCheckinUI(idx, isCheckedIn) {
+    var inBtn  = document.getElementById('checkin-btn-'  + idx);
+    var outBtn = document.getElementById('checkout-btn-' + idx);
+    if (!inBtn || !outBtn) return;
+    if (isCheckedIn) {
+      inBtn.style.display  = 'none';
+      outBtn.style.display = '';
+      outBtn.disabled = false;
+      outBtn.textContent = 'Check Out';
+    } else {
+      inBtn.style.display  = '';
+      outBtn.style.display = 'none';
+      inBtn.disabled = false;
+      inBtn.innerHTML = ic('home') + 'Check In';
+    }
+  }
+
   /* ── Action handlers ─────────────────────────────────────────────────────── */
 
   /* ── Activity Log Drawer ─────────────────────────────────────────────────── */
@@ -3374,9 +3414,68 @@
       }
       toast(T('routeDrawing') + CT[idx].n + '…');
     },
-    open:  function (v)     { S.open = S.open === v ? null : v; render(); },
+    open:  function (v)     {
+      S.open = S.open === v ? null : v;
+      render();
+      // If opening a shelter fold, check if user is already checked in
+      if (S.open && S.open.charAt(0) === 'c') {
+        var idx = parseInt(S.open.slice(1));
+        var shelterId = CT[idx] && CT[idx].dbId;
+        if (shelterId) {
+          fetch('api/shelter-checkin.php?shelter_id=' + shelterId, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.ok) _updateCheckinUI(idx, data.checked_in);
+            })
+            .catch(function () {});
+        }
+      }
+    },
     more:  function ()      { S.more = !S.more; render(); },
-    'load-more': function () {
+    'checkin': function (v) {
+      var idx = +v;
+      var shelterId = CT[idx] && CT[idx].dbId;
+      if (!shelterId) { toast('Shelter not available.'); return; }
+      var btn = document.getElementById('checkin-btn-' + idx);
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      fetch('api/shelter-checkin.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shelter_id: shelterId })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) { toast(data.error || 'Check-in failed.'); if (btn) { btn.disabled = false; btn.innerHTML = ic('home') + 'Check In'; } return; }
+          CT[idx].o = data.occupancy;
+          fetchShelters();
+          toast('Checked in to ' + CT[idx].n + '.');
+          _updateCheckinUI(idx, true);
+        })
+        .catch(function () { toast('Could not reach server.'); if (btn) { btn.disabled = false; btn.innerHTML = ic('home') + 'Check In'; } });
+    },
+    'checkout': function (v) {
+      var idx = +v;
+      var shelterId = CT[idx] && CT[idx].dbId;
+      if (!shelterId) { toast('Shelter not available.'); return; }
+      var btn = document.getElementById('checkout-btn-' + idx);
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      fetch('api/shelter-checkin.php', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shelter_id: shelterId })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) { toast(data.error || 'Check-out failed.'); if (btn) { btn.disabled = false; btn.textContent = 'Check Out'; } return; }
+          CT[idx].o = data.occupancy;
+          fetchShelters();
+          toast('Checked out of ' + CT[idx].n + '.');
+          _updateCheckinUI(idx, false);
+        })
+        .catch(function () { toast('Could not reach server.'); if (btn) { btn.disabled = false; btn.textContent = 'Check Out'; } });
+    },
       if (_reportPage < _reportPages) {
         _reportPage++;
         var btn = document.getElementById('load-more-btn');
