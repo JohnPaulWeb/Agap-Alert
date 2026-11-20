@@ -123,6 +123,16 @@ document.getElementById('register-form').addEventListener('submit', function (e)
   };
   if (hasInvite && code) payload.invite_code = code;
 
+  // Attach Google profile data if the user connected their Google account
+  var googlePrefill = sessionStorage.getItem('agapalert_google_prefill');
+  if (googlePrefill) {
+    try {
+      var gp = JSON.parse(googlePrefill);
+      if (gp.google_id)         payload.google_id          = gp.google_id;
+      if (gp.google_avatar_url) payload.google_avatar_url  = gp.google_avatar_url;
+    } catch (e) {}
+  }
+
   fetch('api/register.php', {
     method:      'POST',
     credentials: 'same-origin',
@@ -158,6 +168,7 @@ document.getElementById('register-form').addEventListener('submit', function (e)
       }
 
       // Cache user and redirect
+      sessionStorage.removeItem('agapalert_google_prefill');
       localStorage.setItem('agapalert_user', JSON.stringify(data.user));
       localStorage.setItem('agapalert_flash', JSON.stringify({
         type:    data.user.role === 'official' ? 'warning' : 'success',

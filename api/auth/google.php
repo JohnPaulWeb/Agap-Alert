@@ -99,7 +99,7 @@ if (!$row && !empty($email)) {
     }
 }
 
-// ── If no account exists: block on login, create on register ─────────────────
+// ── If no account exists ─────────────────────────────────────────────────────
 if (!$row) {
     if ($mode === 'login') {
         json_response([
@@ -109,17 +109,19 @@ if (!$row) {
         ], 404);
     }
 
-    // Register mode — create a new account
-    $isNew = true;
-    $fname = $givenName  ?: 'Google';
-    $lname = $familyName ?: 'User';
-
-    $db->prepare(
-        'INSERT INTO users (fname, lname, email, google_id, google_avatar_url, role, status, privacy_accepted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
-    )->execute([$fname, $lname, $email, $googleId, $picture ?: null, 'resident', 'active']);
-
-    $row = ['id' => (int) $db->lastInsertId()];
+    // Register mode — don't create account yet, just return Google profile data
+    // so the form can be pre-filled. Account is created when the form is submitted.
+    json_response([
+        'ok'          => true,
+        'prefill_only'=> true,
+        'profile'     => [
+            'fname'            => $givenName,
+            'lname'            => $familyName,
+            'email'            => $email,
+            'google_id'        => $googleId,
+            'google_avatar_url'=> $picture,
+        ],
+    ]);
 }
 
 // Always refresh the Google avatar URL in case it changed
@@ -135,7 +137,14 @@ if ($user['status'] === 'rejected') {
     json_response(['ok' => false, 'error' => 'Your account access has been denied. Contact the administrator.'], 403);
 }
 
-// ── 2-Step: generate OTP and email it instead of signing in directly ──────────
+// ── 2-Step: only require OTP for new registrations, not returning users ───────
+if (!$isNew) {
+    // Returning user — sign in directly, no OTP needed
+    sign_in((int) $user['id']);
+    json_response(['ok' => true, 'is_new' => false, 'user' => $user]);
+}
+
+// New user — generate OTP and email it before granting access
 require_once __DIR__ . '/../../config/mail_helper.php';
 
 // Clean up expired OTPs for this user

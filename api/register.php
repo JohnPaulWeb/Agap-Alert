@@ -17,6 +17,9 @@ try {
     $password    = $body['password']    ?? '';
     $invite_code = strtoupper(trim($body['invite_code'] ?? ''));
     $privacyAccepted = !empty($body['privacy_accepted']);
+    // Optional Google profile data passed from the register form
+    $googleId        = trim($body['google_id']         ?? '');
+    $googleAvatarUrl = trim($body['google_avatar_url'] ?? '');
 
     $errors = [];
 
@@ -76,19 +79,21 @@ try {
 
     try {
         $db->prepare(
-            'INSERT INTO users (fname, mname, lname, email, phone_number, phone_norm, password_hash, role, status, invite_code, privacy_accepted_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO users (fname, mname, lname, email, phone_number, phone_norm, password_hash, role, status, invite_code, privacy_accepted_at, google_id, google_avatar_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)'
         )->execute([
             $fname,
             $mname ?: null,
             $lname,
             $email ?: null,
-            '0' . substr($phoneNorm, 2),   // store as 09XXXXXXXXX
+            '0' . substr($phoneNorm, 2),
             $phoneNorm,
             $hash,
             $role,
             $status,
             $codeRow ? $invite_code : null,
+            $googleId        ?: null,
+            $googleAvatarUrl ?: null,
         ]);
     } catch (PDOException $e) {
         // Lost a race with another signup using the same email or number
