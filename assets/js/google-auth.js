@@ -48,11 +48,20 @@ function _handleGoogleToken(idToken) {
         return;
       }
 
+      // OTP required — redirect to verify page
+      if (data.requires_otp) {
+        sessionStorage.setItem('agapalert_otp_token', data.otp_token);
+        sessionStorage.setItem('agapalert_otp_email', data.email_hint || '');
+        sessionStorage.setItem('agapalert_otp_isnew', data.is_new ? '1' : '0');
+        window.location.href = 'verify-otp.html';
+        return;
+      }
+
       localStorage.setItem('agapalert_user', JSON.stringify(data.user));
-      localStorage.setItem('agapalert_flash', JSON.stringify({
-        type:    'success',
-        message: data.is_new ? 'Account created with Google. Welcome to AgapAlert.' : 'Signed in with Google. Welcome back.',
-      }));
+      var msg = data.is_new
+        ? 'Account created with Google. Welcome to AgapAlert.'
+        : 'Signed in with Google. Welcome back.';
+      localStorage.setItem('agapalert_flash', JSON.stringify({ type: 'success', message: msg }));
       window.location.href = 'index.html';
     })
     .catch(function (err) {

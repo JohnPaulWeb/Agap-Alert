@@ -135,7 +135,44 @@ if ($user['status'] === 'rejected') {
     json_response(['ok' => false, 'error' => 'Your account access has been denied. Contact the administrator.'], 403);
 }
 
-// ── Sign in ───────────────────────────────────────────────────────────────────
-sign_in((int) $user['id']);
+// ── 2-Step: generate OTP and email it instead of signing in directly ──────────
+require_once __DIR__ . '/../../config/mail_helper.php';
 
-json_response(['ok' => true, 'is_new' => $isNew, 'user' => $user]);
+// Clean up expired OTPs for this user
+$db->prepare('DELETE FROM google_otps WHERE user_id = ? OR expires_at < NOW()')
+   ->execute([$user['id']]);
+
+// Generate 6-digit OTP and a secure token for the verify page
+$otp        = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+$otpHash    = password_hash($otp, PASSWORD_BCRYPT, ['cost' => 10]);
+$otpToken   = bin2hex(random_bytes(32));   // 64-char hex token
+$expiresAt  = date('Y-m-d H:i:s', time() + 10 * 60);   // 10 minutes
+
+$db->prepare(
+    'INSERT INTO google_otps (user_id, otp_hash, token, expires_at) VALUES (?, ?, ?, ?)'
+)->execute([$user['id'], $otpHash, $otpToken, $expiresAt]);
+
+// Send OTP email
+$emailSent = false;
+if (!empty($user['email'])) {
+    $emailSent = agap_send_mail(
+        $user['email'],
+        'Your AgapAlert verification code',
+        "Hi {$user['fname']},\n\n"
+        . "Your verification code is:\n\n"
+        . "  {$otp}\n\n"
+        . "This code expires in 10 minutes.\n"
+        . "Do not share this code with anyone.\n\n"
+        . "If you did not request this, ignore this email.\n\n"
+        . "— AgapAlert, Barangay Dalongue DRRMC"
+    );
+}
+
+json_response([
+    'ok'           => true,
+    'requires_otp' => true,
+    'is_new'       => $isNew,
+    'otp_token'    => $otpToken,
+    'email_hint'   => $user['email'] ? preg_replace('/(?<=.).(?=[^@]*@)/u', '*', $user['email']) : null,
+    'email_sent'   => $emailSent,
+]);
