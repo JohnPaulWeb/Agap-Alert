@@ -1,16 +1,11 @@
 <?php
 /**
  * api/auth/google.php
- * POST — verify a Google ID token and sign the user in (or create an account).
+ * POST — verify a Google ID token and sign the user in.
  *
- * Request body (JSON):
- *   { "credential": "<Google ID token JWT>" }
- *
- * Behaviour:
- *   - Existing account  → sign in directly.
- *   - No account found  → create one automatically, return { ok: true, is_new: true }.
- *     The frontend decides what to do next (login page redirects to register to
- *     collect the remaining required fields; register page proceeds normally).
+ * Login mode:  finds existing account → signs in directly.
+ * Register mode: if no account → returns profile data for form prefill.
+ *                if account exists → signs in directly.
  */
 require_once __DIR__ . '/../../api/bootstrap.php';
 require_method('POST');
@@ -29,7 +24,7 @@ if (empty($clientId)) {
 // ── Get the credential from the request ──────────────────────────────────────
 $body       = json_body();
 $credential = trim($body['credential'] ?? '');
-$mode       = $body['mode'] ?? 'register';  // 'login' or 'register'
+$mode       = $body['mode'] ?? 'register';
 
 if (empty($credential)) {
     json_response(['ok' => false, 'error' => 'Missing Google credential.'], 400);
@@ -78,9 +73,8 @@ function fetchUser(PDO $db, int $id): array|false {
 }
 
 // ── Find the user ─────────────────────────────────────────────────────────────
-$db     = db();
-$row    = null;
-$isNew  = false;
+$db  = db();
+$row = null;
 
 // 1. Find by google_id (returning user)
 $stmt = $db->prepare('SELECT id FROM users WHERE google_id = ? LIMIT 1');
@@ -92,14 +86,13 @@ if (!$row && !empty($email)) {
     $stmt = $db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $row = $stmt->fetch() ?: null;
-
     if ($row) {
         $db->prepare('UPDATE users SET google_id = ?, google_avatar_url = ? WHERE id = ?')
            ->execute([$googleId, $picture ?: null, $row['id']]);
     }
 }
 
-// ── If no account exists ─────────────────────────────────────────────────────
+// ── No account found ─────────────────────────────────────────────────────────
 if (!$row) {
     if ($mode === 'login') {
         json_response([
@@ -109,22 +102,21 @@ if (!$row) {
         ], 404);
     }
 
-    // Register mode — don't create account yet, just return Google profile data
-    // so the form can be pre-filled. Account is created when the form is submitted.
+    // Register mode — return profile data for form prefill, don't create account yet
     json_response([
-        'ok'          => true,
-        'prefill_only'=> true,
-        'profile'     => [
-            'fname'            => $givenName,
-            'lname'            => $familyName,
-            'email'            => $email,
-            'google_id'        => $googleId,
-            'google_avatar_url'=> $picture,
+        'ok'           => true,
+        'prefill_only' => true,
+        'profile'      => [
+            'fname'             => $givenName,
+            'lname'             => $familyName,
+            'email'             => $email,
+            'google_id'         => $googleId,
+            'google_avatar_url' => $picture,
         ],
     ]);
 }
 
-// Always refresh the Google avatar URL in case it changed
+// ── Existing account — refresh avatar and sign in ────────────────────────────
 if (!empty($picture)) {
     $db->prepare('UPDATE users SET google_avatar_url = ? WHERE id = ?')
        ->execute([$picture, $row['id']]);
@@ -132,45 +124,10 @@ if (!empty($picture)) {
 
 $user = fetchUser($db, (int) $row['id']);
 
-// ── Guard: rejected accounts cannot sign in ──────────────────────────────────
 if ($user['status'] === 'rejected') {
     json_response(['ok' => false, 'error' => 'Your account access has been denied. Contact the administrator.'], 403);
 }
 
-// ── Sign in directly — no OTP ─────────────────────────────────────────────────
 sign_in((int) $user['id']);
 
-json_response(['ok' => true, 'is_new' => $isNew, 'user' => $user]);
-
-// New user — generate OTP and email it before granting access
-require_once __DIR__ . '/../../config/mail_helper.php';
-
-// Clean up expired OTPs for this user
-$db->prepare('DELETE FROM google_otps WHERE user_id = ? OR expires_at < NOW()')
-   ->execute([$user['id']]);
-
-// Generate 6-digit OTP and a secure token for the verify page
-$otp        = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-$otpHash    = password_hash($otp, PASSWORD_BCRYPT, ['cost' => 10]);
-$otpToken   = bin2hex(random_bytes(32));   // 64-char hex token
-$expiresAt  = date('Y-m-d H:i:s', time() + 10 * 60);   // 10 minutes
-
-$db->prepare(
-    'INSERT INTO google_otps (user_id, otp_hash, token, expires_at) VALUES (?, ?, ?, ?)'
-)->execute([$user['id'], $otpHash, $otpToken, $expiresAt]);
-
-// Send OTP email
-$emailSent = false;
-if (!empty($user['email'])) {
-    $emailSent = agap_send_mail(
-        $user['email'],
-        'Your AgapAlert verification code',
-        "Hi {$user['fname']},\n\n"
-        . "Your verification code is:\n\n"
-        . "  {$otp}\n\n"
-        . "This code expires in 10 minutes.\n"
-        . "Do not share this code with anyone.\n\n"
-        . "If you did not request this, ignore this email.\n\n"
-        . "— AgapAlert, Barangay Dalongue DRRMC"
-    );
-
+json_response(['ok' => true, 'is_new' => false, 'user' => $user]);
