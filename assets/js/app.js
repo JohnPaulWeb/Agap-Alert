@@ -172,6 +172,24 @@
       shelterSaveTitle: 'Update shelter occupancy?',
       shelterCloseTitle: 'Close the shelter?',
       shelterOpenTitle: 'Open the shelter?',
+      residentStayTitle: 'Evacuation center check-in',
+      residentStaySub: 'Request to check in or check out. An administrator must approve your request.',
+      residentStayChoose: 'Choose an evacuation center',
+      residentStayCheckin: 'Request check-in',
+      residentStayCheckout: 'Request check-out',
+      residentStayLoading: 'Loading your evacuation status…',
+      residentStayNoShelter: 'No open evacuation centers are available.',
+      residentStayCurrent: 'Currently checked in at',
+      residentStayNone: 'You are not currently checked in.',
+      residentStayHistory: 'Recent requests',
+      residentStayEmpty: 'No requests yet.',
+      residentStayCheckinType: 'Check-in',
+      residentStayCheckoutType: 'Check-out',
+      residentStayPending: 'Pending',
+      residentStayApproved: 'Approved',
+      residentStayRejected: 'Rejected',
+      residentStaySuccess: 'Your request was sent for admin review.',
+      residentStayError: 'Could not load or submit your request.',
       // Sign out
       signOutTitle: 'Sign out?',
       signOutBody: 'You will leave your account. You will need to sign in again.',
@@ -333,13 +351,27 @@
         change_password:      'Changed password',
         add_shelter:          'Added shelter',
         update_shelter:       'Updated shelter',
+        approve_shelter_request: 'Approved evacuation request',
+        reject_shelter_request:  'Rejected evacuation request',
         generate_invite_code: 'Generated invite code',
         revoke_invite_code:   'Revoked invite code',
       },
       // Official panel
       offPanelTitle: 'Official Panel',
-      offPanelSub: 'Manage shelters, reports and view your activity log.',
+      offPanelSub: 'Manage shelters, review evacuation requests, reports and your activity log.',
       offTabShelters: 'Shelters',
+      offTabEvacRequests: 'Evacuation Requests',
+      offCheckinTitle: 'Evacuation Check-in/Check-out Requests',
+      offCheckinSub: 'Approve or reject resident requests. Approved check-ins and check-outs update shelter occupancy.',
+      offCheckinPending: 'pending',
+      offCheckinEmpty: 'No pending evacuation requests.',
+      offCheckinLoad: 'Could not load evacuation requests.',
+      offCheckinApprove: 'Approve',
+      offCheckinReject: 'Reject',
+      offCheckinApproved: 'Evacuation request approved.',
+      offCheckinRejected: 'Evacuation request rejected.',
+      offCheckinRequestType: 'Check-in',
+      offCheckoutRequestType: 'Check-out',
       offTabLog: 'My Activity Log',
       offLogTitle: 'My Activity Log',
       offLogSub: 'All actions you have performed in this system.',
@@ -474,6 +506,24 @@
       shelterSaveTitle: 'I-update ang occupancy ng likasan?',
       shelterCloseTitle: 'Isara ang likasan?',
       shelterOpenTitle: 'Buksan ang likasan?',
+      residentStayTitle: 'Pag-check-in sa evacuation center',
+      residentStaySub: 'Humiling na mag-check-in o mag-check-out. Kailangang aprubahan ng admin ang iyong kahilingan.',
+      residentStayChoose: 'Pumili ng evacuation center',
+      residentStayCheckin: 'Humiling ng check-in',
+      residentStayCheckout: 'Humiling ng check-out',
+      residentStayLoading: 'Kinukuha ang iyong status sa evacuation center…',
+      residentStayNoShelter: 'Walang bukas na evacuation center sa ngayon.',
+      residentStayCurrent: 'Naka-check-in ngayon sa',
+      residentStayNone: 'Hindi ka kasalukuyang naka-check-in.',
+      residentStayHistory: 'Mga kamakailang kahilingan',
+      residentStayEmpty: 'Wala pang mga kahilingan.',
+      residentStayCheckinType: 'Check-in',
+      residentStayCheckoutType: 'Check-out',
+      residentStayPending: 'Naghihintay',
+      residentStayApproved: 'Naaprubahan',
+      residentStayRejected: 'Tinanggihan',
+      residentStaySuccess: 'Ipinadala na ang iyong kahilingan para sa pagsusuri ng admin.',
+      residentStayError: 'Hindi makuha o maipadala ang iyong kahilingan.',
       // Sign out
       signOutTitle: 'Mag-sign out?',
       signOutBody: 'Aalis ka sa iyong account. Kailangan mong mag-sign in ulit.',
@@ -635,13 +685,27 @@
         change_password:      'Binago ang password',
         add_shelter:          'Idinagdag ang likasan',
         update_shelter:       'In-update ang likasan',
+        approve_shelter_request: 'Inaprubahan ang kahilingan sa paglikas',
+        reject_shelter_request:  'Tinanggihan ang kahilingan sa paglikas',
         generate_invite_code: 'Ginawang invite code',
         revoke_invite_code:   'Binawing invite code',
       },
       // Official panel
       offPanelTitle: 'Panel ng Opisyal',
-      offPanelSub: 'Pamahalaan ang mga likasan, ulat at tingnan ang iyong log ng aktibidad.',
+      offPanelSub: 'Pamahalaan ang mga likasan, aprubahan ang mga kahilingan sa paglikas, mga ulat at ang iyong log ng aktibidad.',
       offTabShelters: 'Mga Likasan',
+      offTabEvacRequests: 'Mga Kahilingan sa Paglikas',
+      offCheckinTitle: 'Mga Kahilingan sa Check-in/Check-out',
+      offCheckinSub: 'Aprubahan o tanggihan ang mga kahilingan ng residente. Awtomatikong ina-update ang occupancy kapag naaprubahan.',
+      offCheckinPending: 'naghihintay',
+      offCheckinEmpty: 'Walang nakabinbing kahilingan sa paglikas.',
+      offCheckinLoad: 'Hindi ma-load ang mga kahilingan sa paglikas.',
+      offCheckinApprove: 'Aprubahan',
+      offCheckinReject: 'Tanggihan',
+      offCheckinApproved: 'Naaprubahan ang kahilingan sa paglikas.',
+      offCheckinRejected: 'Tinanggihan ang kahilingan sa paglikas.',
+      offCheckinRequestType: 'Check-in',
+      offCheckoutRequestType: 'Check-out',
       offTabLog: 'Aking Log ng Aktibidad',
       offLogTitle: 'Aking Log ng Aktibidad',
       offLogSub: 'Lahat ng mga aksyon na iyong ginawa sa sistemang ito.',
@@ -735,6 +799,15 @@
     el.classList.add('on');
     clearTimeout(tt);
     tt = setTimeout(function () { el.classList.remove('on'); }, 2600);
+  }
+
+  function htmlEscape(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function off()  { return S.role === 'off'; }
@@ -1146,8 +1219,9 @@
   function bar(c) {
     var p = c.o / c.c * 100;
     var colour = p > 90 ? 'var(--rose)' : p > 70 ? 'var(--amb)' : 'var(--ok)';
-    return '<div class="bar"><i style="width:' + p + '%;background:' + colour + '"></i></div>'
-      + '<span class="mute" style="font-size:13.5px">' + (c.c - c.o) + ' ' + T('left') + '</span>';
+    var shelterId = c.dbId || '';
+    return '<div class="bar" data-shelter-bar="' + shelterId + '"><i style="width:' + p + '%;background:' + colour + '"></i></div>'
+      + '<span class="mute" data-shelter-left="' + shelterId + '" style="font-size:13.5px">' + (c.c - c.o) + ' ' + T('left') + '</span>';
   }
 
   /* ── View renderers ──────────────────────────────────────────────────────── */
@@ -1244,6 +1318,13 @@
         + '<h1>' + T('sh') + '</h1>'
         + '<p>' + CT.length + ' ' + T('centersOpen') + '</p>'
       + '</div></div>'
+      + (!_isOfficial && !_isAdmin
+          ? '<div class="admin-section" style="margin-bottom:1rem">'
+              + '<div class="admin-section-head"><div><h2>' + T('residentStayTitle') + '</h2>'
+                  + '<p>' + T('residentStaySub') + '</p></div></div>'
+              + '<div id="resident-checkins-state" style="padding:1rem 1.4rem"><div class="empty">' + T('residentStayLoading') + '</div></div>'
+            + '</div>'
+          : '')
       + '<div class="led">'
           + CT.map(function (c, i) {
               var o = S.open === 'c' + i;
@@ -2112,10 +2193,10 @@
                   + '<div style="flex:1;min-width:200px">'
                       + '<div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden;margin-bottom:4px">'
                           + '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px"></div></div>'
-                      + '<span style="font-size:12.5px;color:var(--mute)">' + s.occupancy + ' / ' + s.capacity + ' (' + pct + T('adminShelterFull') + ')</span></div>'
+                      + '<span style="font-size:12.5px;color:var(--mute)"><span data-shelter-occupancy-count="' + s.id + '">' + s.occupancy + ' / ' + s.capacity + '</span> (' + pct + T('adminShelterFull') + ')</span></div>'
                   + '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">'
                       + '<label class="gen-label" style="margin:0;white-space:nowrap">' + T('adminShelterCountLbl') + '</label>'
-                      + '<input class="gen-input" style="width:90px;padding:0.4rem 0.6rem" type="number" min="0" max="' + s.capacity + '" value="' + s.occupancy + '" id="occ-' + s.id + '">'
+                      + '<input class="gen-input" style="width:90px;padding:0.4rem 0.6rem" type="number" min="0" max="' + s.capacity + '" value="' + s.occupancy + '" data-current-occupancy="' + s.occupancy + '" data-shelter-occupancy-input="' + s.id + '" id="occ-' + s.id + '">'
                       + '<button class="gen-btn" style="padding:0.4rem 0.9rem;font-size:13px" data-shelter-id="' + s.id + '" data-capacity="' + s.capacity + '">' + T('adminShelterSaveBtn') + '</button>'
                       + '<button class="btn-revoke" style="padding:0.35rem 0.75rem;font-size:12.5px" data-shelter-toggle="' + s.id + '" data-open="' + s.is_open + '">' + (s.is_open ? T('adminShelterCloseBtn') : T('adminShelterOpenBtn')) + '</button>'
                   + '</div>'
@@ -2396,6 +2477,179 @@
     renderHistory();
   }
 
+  function initResidentCheckins() {
+    var el = document.getElementById('resident-checkins-state');
+    if (!el || el._init) return;
+    el._init = true;
+
+    function renderState() {
+      el.innerHTML = '<div class="empty">' + T('residentStayLoading') + '</div>';
+      Promise.all([
+        fetch('api/checkins.php', { credentials: 'same-origin' }).then(function (response) { return response.json(); }),
+        fetch('api/shelters.php', { credentials: 'same-origin' }).then(function (response) { return response.json(); })
+      ]).then(function (results) {
+          var data = results[0];
+          var sheltersData = results[1];
+          var openShelters = sheltersData.ok ? (sheltersData.shelters || []) : [];
+          if (!data.ok || !sheltersData.ok) {
+            el.innerHTML = '<div class="empty">' + T('residentStayError') + '</div>';
+            return;
+          }
+
+          var requests = data.requests || [];
+          var hasPending = requests.some(function (request) { return request.status === 'pending'; });
+          var html = '';
+          if (data.active_stay) {
+            html += '<p style="margin:0 0 0.8rem;color:var(--ink)">' + T('residentStayCurrent')
+              + ' <strong>' + htmlEscape(data.active_stay.shelter_name) + '</strong>.</p>'
+              + '<button class="gen-btn" id="resident-checkout-btn" type="button"'
+              + (hasPending ? ' disabled' : '') + '>' + T('residentStayCheckout') + '</button>';
+          } else {
+            html += '<p style="margin:0 0 0.8rem;color:var(--mute)">' + T('residentStayNone') + '</p>';
+            html += openShelters.length
+              ? '<div style="display:flex;gap:0.6rem;flex-wrap:wrap">'
+                  + '<select class="gen-input" id="resident-checkin-shelter" style="flex:1;min-width:220px">'
+                  + '<option value="">' + T('residentStayChoose') + '</option>'
+                  + openShelters.map(function (center) {
+                      return '<option value="' + parseInt(center.id, 10) + '">' + htmlEscape(center.name) + '</option>';
+                    }).join('')
+                  + '</select><button class="gen-btn" id="resident-checkin-btn" type="button"'
+                  + (hasPending ? ' disabled' : '') + '>' + T('residentStayCheckin') + '</button>'
+                + '</div>'
+              : '<p class="empty">' + T('residentStayNoShelter') + '</p>';
+          }
+          if (hasPending) {
+            html += '<p style="color:var(--amb);font-size:13px;margin:0.7rem 0 0">' + T('residentStayPending') + '</p>';
+          }
+          html += '<h3 style="margin:1rem 0 0.4rem;font-size:14px">' + T('residentStayHistory') + '</h3>';
+          html += requests.length ? '<div class="led">' + requests.map(function (request) {
+            var statusKey = request.status === 'approved' ? 'residentStayApproved'
+              : request.status === 'rejected' ? 'residentStayRejected' : 'residentStayPending';
+            var statusClass = request.status === 'approved' ? 'badge-active'
+              : request.status === 'rejected' ? 'badge-expired' : 'badge-pending';
+            return '<div class="approval-row"><div class="approval-info">'
+              + '<strong>' + (request.request_type === 'check_in' ? T('residentStayCheckinType') : T('residentStayCheckoutType'))
+              + ' — ' + htmlEscape(request.shelter_name) + '</strong>'
+              + '<span>' + htmlEscape(request.requested_at) + '</span></div>'
+              + '<span class="badge ' + statusClass + '">' + T(statusKey) + '</span></div>';
+          }).join('') + '</div>'
+            : '<div class="empty">' + T('residentStayEmpty') + '</div>';
+          el.innerHTML = html;
+
+          var checkinButton = document.getElementById('resident-checkin-btn');
+          var checkoutButton = document.getElementById('resident-checkout-btn');
+          function sendRequest(action, shelterId) {
+            var button = action === 'check_in' ? checkinButton : checkoutButton;
+            if (button) button.disabled = true;
+            fetch('api/checkins.php', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: action, shelter_id: shelterId })
+            }).then(function (response) { return response.json(); })
+              .then(function (result) {
+                if (!result.ok) {
+                  toast(result.error || T('residentStayError'));
+                  if (button) button.disabled = false;
+                  return;
+                }
+                toast(T('residentStaySuccess'));
+                renderState();
+              }).catch(function () {
+                toast(T('residentStayError'));
+                if (button) button.disabled = false;
+              });
+          }
+          if (checkinButton) {
+            checkinButton.addEventListener('click', function () {
+              var select = document.getElementById('resident-checkin-shelter');
+              if (!select || !select.value) { toast(T('residentStayChoose')); return; }
+              sendRequest('check_in', parseInt(select.value, 10));
+            });
+          }
+          if (checkoutButton) checkoutButton.addEventListener('click', function () { sendRequest('check_out'); });
+        })
+        .catch(function () { el.innerHTML = '<div class="empty">' + T('residentStayError') + '</div>'; });
+    }
+
+    renderState();
+  }
+
+  function initOfficialCheckinRequests(onSheltersUpdated) {
+    var el = document.getElementById('official-checkin-requests-list');
+    var count = document.getElementById('official-checkin-requests-count');
+    var badge = document.getElementById('tab-official-checkin-count');
+    if (!el || el._init) return;
+    el._init = true;
+
+    function api(url, options) {
+      return fetch(url, Object.assign({ credentials: 'same-origin' }, options))
+        .then(function (response) { return response.json(); });
+    }
+
+    function renderRequests() {
+      el.innerHTML = '<div class="empty">' + T('loading') + '</div>';
+      api('api/official/checkins.php')
+        .then(function (data) {
+          if (!data.ok) { toast(T('offCheckinLoad')); return; }
+          var requests = data.requests || [];
+          if (count) {
+            count.textContent = requests.length + ' ' + T('offCheckinPending');
+            count.className = 'badge ' + (requests.length ? 'badge-pending' : 'badge-used');
+          }
+          if (badge) {
+            badge.textContent = requests.length;
+            badge.className = 'tab-badge' + (requests.length ? ' on' : '');
+          }
+          if (!requests.length) {
+            el.innerHTML = '<div class="empty">' + T('offCheckinEmpty') + '</div>';
+            return;
+          }
+
+          el.innerHTML = requests.map(function (request) {
+            var isCheckin = request.request_type === 'check_in';
+            return '<div class="approval-row">'
+              + '<div class="approval-info"><strong>' + htmlEscape(request.full_name) + '</strong>'
+                  + '<span>' + (isCheckin ? T('offCheckinRequestType') : T('offCheckoutRequestType'))
+                    + ' — ' + htmlEscape(request.shelter_name)
+                    + ' · ' + htmlEscape(request.requested_at) + '</span></div>'
+              + '<div class="approval-actions">'
+                  + '<button class="btn-approve" data-id="' + parseInt(request.id, 10) + '">' + T('offCheckinApprove') + '</button>'
+                  + '<button class="btn-reject" data-id="' + parseInt(request.id, 10) + '">' + T('offCheckinReject') + '</button>'
+              + '</div></div>';
+          }).join('');
+
+          el.querySelectorAll('.btn-approve, .btn-reject').forEach(function (button) {
+            button.addEventListener('click', function () {
+              var action = button.classList.contains('btn-approve') ? 'approve' : 'reject';
+              button.disabled = true;
+              api('api/official/checkins.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ request_id: parseInt(button.dataset.id, 10), action: action })
+              }).then(function (result) {
+                if (!result.ok) {
+                  toast(result.error || T('offCheckinLoad'));
+                  button.disabled = false;
+                  return;
+                }
+                renderRequests();
+                fetchShelters();
+                if (onSheltersUpdated) onSheltersUpdated();
+                toast(action === 'approve' ? T('offCheckinApproved') : T('offCheckinRejected'));
+              }).catch(function () {
+                button.disabled = false;
+                toast(T('offCheckinLoad'));
+              });
+            });
+          });
+        })
+        .catch(function () { toast(T('offCheckinLoad')); });
+    }
+
+    renderRequests();
+  }
+
   /* ── Official panel ──────────────────────────────────────────────────────── */
   function officialView() {
     if (!_isOfficial || _isPending) return '<div class="pg"><p class="mute">Access denied.</p></div>';
@@ -2404,6 +2658,7 @@
           + '<p style="color:var(--mute);margin:0;font-size:14px">' + T('offPanelSub') + '</p></div>'
       + '<div class="admin-tabs" id="official-tabs">'
           + '<button class="admin-tab active" data-tab="off-shelters">' + T('offTabShelters') + '</button>'
+          + '<button class="admin-tab" data-tab="off-checkin-requests">' + T('offTabEvacRequests') + ' <span class="tab-badge" id="tab-official-checkin-count"></span></button>'
       + '</div>'
 
       // ── Shelters panel ───────────────────────────────────────────────────
@@ -2414,6 +2669,13 @@
           + '</div></div>'
           + '<div id="off-shelters-list"></div>'
       + '</div>'
+      + '</div>'
+      + '<div class="tab-panel" id="panel-off-checkin-requests" style="display:none">'
+          + '<div class="admin-section"><div class="admin-section-head"><div>'
+              + '<h2>' + T('offCheckinTitle') + '</h2>'
+              + '<p>' + T('offCheckinSub') + '</p>'
+          + '</div><span class="badge badge-pending" id="official-checkin-requests-count">0 ' + T('offCheckinPending') + '</span></div>'
+          + '<div id="official-checkin-requests-list"></div></div>'
       + '</div>'
 
     + '</div>';
@@ -2458,7 +2720,7 @@
                   + '<span>' + s.zone + (s.landmark ? ' — ' + s.landmark : '') + '</span>'
               + '</div>'
               + '<div style="display:flex;gap:0.5rem;align-items:center;font-size:13px;color:var(--mute)">'
-                  + '<span>' + s.occupancy + ' / ' + s.capacity + ' occupied</span>'
+                  + '<span><span data-shelter-occupancy-count="' + s.id + '">' + s.occupancy + ' / ' + s.capacity + '</span> occupied</span>'
                   + '<span class="badge ' + (s.is_open ? 'badge-active' : 'badge-expired') + '">'
                       + (s.is_open ? 'Open' : 'Closed') + '</span>'
               + '</div>'
@@ -2470,6 +2732,7 @@
 
     // Initial load
     renderOffShelters();
+    initOfficialCheckinRequests(renderOffShelters);
   }
 
   /* ── Users panel view (admin only) ──────────────────────────────────────── */
@@ -2713,6 +2976,7 @@
       if (led) { _renderReportRows(led); _renderLoadMore(); }
     }
     if (S.tab === 'admin') { initAdminPanel(); }
+    if (S.tab === 'centers' && !_isAdmin && !_isOfficial) { initResidentCheckins(); }
     if (S.tab === 'official') { initOfficialPanel(); }
     if (S.tab === 'users') { initUsersPanel(); }
     document.documentElement.lang = S.lang === 'fil' ? 'fil' : 'en';
@@ -3754,6 +4018,29 @@
             lat:  s.latitude  ? parseFloat(s.latitude)  : null,
             lon:  s.longitude ? parseFloat(s.longitude) : null
           };
+        });
+
+        CT.forEach(function (shelter) {
+          if (!shelter.dbId) return;
+          var occupancy = document.querySelectorAll('[data-shelter-occupancy-count="' + shelter.dbId + '"]');
+          occupancy.forEach(function (el) { el.textContent = shelter.o + ' / ' + shelter.c; });
+
+          var pct = shelter.c > 0 ? shelter.o / shelter.c * 100 : 0;
+          var colour = pct > 90 ? 'var(--rose)' : pct > 70 ? 'var(--amb)' : 'var(--ok)';
+          document.querySelectorAll('[data-shelter-bar="' + shelter.dbId + '"] i').forEach(function (el) {
+            el.style.width = pct + '%';
+            el.style.background = colour;
+          });
+          document.querySelectorAll('[data-shelter-left="' + shelter.dbId + '"]').forEach(function (el) {
+            el.textContent = (shelter.c - shelter.o) + ' ' + T('left');
+          });
+
+          document.querySelectorAll('[data-shelter-occupancy-input="' + shelter.dbId + '"]').forEach(function (input) {
+            if (parseInt(input.value, 10) === parseInt(input.dataset.currentOccupancy, 10)) {
+              input.value = shelter.o;
+            }
+            input.dataset.currentOccupancy = shelter.o;
+          });
         });
 
         // Rebuild CT_COORDS from real DB coordinates;

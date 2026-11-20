@@ -6,6 +6,7 @@ Isang flood early-warning system para sa Barangay Dalongue, Santa Barbara, Panga
 
 - **Live na antas ng baha** — ina-update ng admin/opisyal, nakikita agad ng lahat ng residente
 - **Mga evacuation center** — live na occupancy at ruta mula sa iyong lokasyon (MapLibre GL, Google-style UI + OSRM)
+- **Pag-check-in/pag-check-out** — humihiling ang residente; inaaprubahan o tinatanggihan ng admin at awtomatikong ina-update ang occupancy
 - **SOS** — hold-to-send, nai-save sa database, nakikita ng mga opisyal
 - **Mga ulat ng komunidad** — residente at opisyal ay maaaring mag-ulat ng insidente
 - **Panahon** — live weather mula sa Open-Meteo (walang API key)
@@ -23,6 +24,7 @@ Isang flood early-warning system para sa Barangay Dalongue, Santa Barbara, Panga
 2. I-start ang Apache at MySQL sa XAMPP Control Panel
 3. Pumunta sa `http://localhost/phpmyadmin`, gumawa ng database na `agapalert`
 4. I-run ang `http://localhost/agapalert/config/setup.php` sa browser
+   - Sa kasalukuyang database, i-run din ang `migrate_shelter_requests.sql` para idagdag ang pila ng mga kahilingan sa evacuation center.
 5. Pumunta sa `http://localhost/agapalert/login.html`
 
 ### Default Admin Account
@@ -40,6 +42,7 @@ Password: admin123
 agapalert/
 ├── api/                  PHP API endpoints
 │   ├── admin/            Admin-only endpoints (pending, officials, codes, shelters)
+│   ├── official/         Official-only endpoints (evacuation request review)
 │   ├── profile/          Profile update, avatar, password
 │   ├── flood.php         GET/POST flood level
 │   ├── reports.php       GET/POST/PATCH incident reports
@@ -83,11 +86,13 @@ agapalert/
 | `api/flood.php` | GET/POST | Antas ng baha |
 | `api/reports.php` | GET/POST/PATCH | Mga ulat at SOS |
 | `api/shelters.php` | GET | Mga likasan |
+| `api/checkins.php` | GET/POST | Status at mga kahilingan ng residente sa check-in/check-out |
 | `api/weather.php` | GET | Live na panahon |
 | `api/admin/pending.php` | GET/POST | Apruba/tanggihan ang opisyal |
 | `api/admin/codes.php` | GET/POST/DELETE | Mga invite code |
 | `api/admin/officials.php` | GET/POST | Mga opisyal |
 | `api/admin/shelters.php` | GET/PATCH | Occupancy ng likasan |
+| `api/official/checkins.php` | GET/POST | Apruba/tanggihan ng opisyal ang mga kahilingan sa check-in/check-out |
 
 ## Password reset sa pamamagitan ng email (libre)
 
